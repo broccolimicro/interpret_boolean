@@ -21,10 +21,7 @@
 
 parse_boolean::variable_name export_variable(int variable, boolean::variable_set &variables);
 vector<parse_boolean::variable_name> export_variables(boolean::variable_set &variables);
-vector<parse_boolean::variable_name> export_variables(boolean::cube c, boolean::variable_set &variables);
-vector<parse_boolean::variable_name> export_variables(boolean::cover c, boolean::variable_set &variables);
-parse_boolean::constant export_constant(boolean::cover c);
-parse_boolean::constant export_constant(boolean::cube c);
+parse_boolean::constant export_constant(int c);
 vector<parse_boolean::assignment> export_assignments(boolean::cube c, boolean::variable_set &variables);
 vector<vector<parse_boolean::assignment> > export_assignments(boolean::cover c, boolean::variable_set &variables);
 parse_boolean::guard export_guard(int variable, bool value, boolean::variable_set &variables);
