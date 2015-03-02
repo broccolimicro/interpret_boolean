@@ -139,11 +139,10 @@ boolean::cover import_cover(tokenizer &tokens, const parse_boolean::complement &
 	else if (syntax.variable.valid)
 	{
 		vector<int> v = define_variables(tokens, syntax.variable, variables, auto_define, auto_define);
-		boolean::cover result(1);
+		result = boolean::cover(1);
 		for (int i = 0; i < (int)v.size(); i++)
-			if (v[i] > 0)
+			if (v[i] >= 0)
 				result &= boolean::cover(v[i], 1);
-		return result;
 	}
 	else if (syntax.value == "1")
 		result = boolean::cover(1);
@@ -151,9 +150,9 @@ boolean::cover import_cover(tokenizer &tokens, const parse_boolean::complement &
 		result = boolean::cover(0);
 
 	if (syntax.invert)
-		result = ~result;
-
-	return result;
+		return ~result;
+	else
+		return result;
 }
 
 boolean::cover import_cover(tokenizer &tokens, const parse_boolean::conjunction &syntax, boolean::variable_set &variables, bool auto_define)
