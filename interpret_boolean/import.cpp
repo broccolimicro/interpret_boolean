@@ -172,3 +172,117 @@ boolean::cover import_cover(tokenizer &tokens, const parse_boolean::disjunction 
 			result |= import_cover(tokens, syntax.branches[i], variables, auto_define);
 	return result;
 }
+
+
+boolean::cube import_cube(tokenizer &tokens, const parse_boolean::assignment &syntax, boolean::variable_set &variables, bool auto_define)
+{
+	if (syntax.expression != NULL && syntax.expression->valid)
+		return import_cube(tokens, *syntax.expression, variables, auto_define);
+	else if (syntax.variable.valid)
+	{
+		vector<int> v = define_variables(tokens, syntax.variable, variables, auto_define, auto_define);
+		boolean::cube result(1);
+		for (int i = 0; i < (int)v.size(); i++)
+			if (v[i] >= 0)
+				result &= boolean::cube(v[i], syntax.value);
+		return result;
+	}
+	else
+		return boolean::cube(0);
+}
+
+boolean::cube import_cube(tokenizer &tokens, const parse_boolean::internal_parallel &syntax, boolean::variable_set &variables, bool auto_define)
+{
+	boolean::cube result(1);
+	for (int i = 0; i < (int)syntax.branches.size(); i++)
+		if (syntax.branches[i].valid)
+			result &= import_cube(tokens, syntax.branches[i], variables, auto_define);
+	return result;
+}
+
+boolean::cube import_cube(tokenizer &tokens, const parse_boolean::internal_choice &syntax, boolean::variable_set &variables, bool auto_define)
+{
+	boolean::cube result(0);
+	for (int i = 0; i < (int)syntax.branches.size(); i++)
+	{
+		if (syntax.branches[i].valid)
+		{
+			if (i > 0)
+			{
+				tokens.load(&syntax);
+				tokens.error("disjunction not allowed here", __FILE__, __LINE__);
+				return result;
+			}
+			else
+				result = import_cube(tokens, syntax.branches[i], variables, auto_define);
+		}
+	}
+	return result;
+}
+
+boolean::cube import_cube(tokenizer &tokens, const parse_boolean::complement &syntax, boolean::variable_set &variables, bool auto_define)
+{
+	boolean::cube result;
+	if (syntax.expression != NULL && syntax.expression->valid)
+		result = import_cube(tokens, *syntax.expression, variables, auto_define);
+	else if (syntax.variable.valid)
+	{
+		vector<int> v = define_variables(tokens, syntax.variable, variables, auto_define, auto_define);
+		result = boolean::cube(1);
+		for (int i = 0; i < (int)v.size(); i++)
+			if (v[i] >= 0)
+				result &= boolean::cube(v[i], 1);
+	}
+	else if (syntax.value == "1")
+		result = boolean::cube(1);
+	else
+		result = boolean::cube(0);
+
+	if (syntax.invert)
+	{
+		if (result.vars().size() > 0)
+		{
+			tokens.load(&syntax);
+			tokens.error("disjunction not allowed here", __FILE__, __LINE__);
+			return result;
+		}
+		else
+		{
+			boolean::cover invresult = ~result;
+			if (invresult.cubes.size() > 0)
+				return invresult.cubes[0];
+			else
+				return boolean::cube(0);
+		}
+	}
+	else
+		return result;
+}
+
+boolean::cube import_cube(tokenizer &tokens, const parse_boolean::conjunction &syntax, boolean::variable_set &variables, bool auto_define)
+{
+	boolean::cube result(1);
+	for (int i = 0; i < (int)syntax.branches.size(); i++)
+		if (syntax.branches[i].valid)
+			result &= import_cube(tokens, syntax.branches[i], variables, auto_define);
+	return result;
+}
+
+boolean::cube import_cube(tokenizer &tokens, const parse_boolean::disjunction &syntax, boolean::variable_set &variables, bool auto_define)
+{
+	boolean::cube result(0);
+	for (int i = 0; i < (int)syntax.branches.size(); i++)
+		if (syntax.branches[i].valid)
+		{
+			if (i > 0)
+			{
+				tokens.load(&syntax);
+				tokens.error("disjunction not allowed here", __FILE__, __LINE__);
+				return result;
+			}
+			else
+				result = import_cube(tokens, syntax.branches[i], variables, auto_define);
+		}
+	return result;
+}
+

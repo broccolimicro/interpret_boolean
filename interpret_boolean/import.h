@@ -37,4 +37,12 @@ boolean::cover import_cover(tokenizer &tokens, const parse_boolean::complement &
 boolean::cover import_cover(tokenizer &tokens, const parse_boolean::conjunction &syntax, boolean::variable_set &variables, bool auto_define = false);
 boolean::cover import_cover(tokenizer &tokens, const parse_boolean::disjunction &syntax, boolean::variable_set &variables, bool auto_define = false);
 
+boolean::cube import_cube(tokenizer &tokens, const parse_boolean::assignment &syntax, boolean::variable_set &variables, bool auto_define = false);
+boolean::cube import_cube(tokenizer &tokens, const parse_boolean::internal_parallel &syntax, boolean::variable_set &variables, bool auto_define = false);
+boolean::cube import_cube(tokenizer &tokens, const parse_boolean::internal_choice &syntax, boolean::variable_set &variables, bool auto_define = false);
+
+boolean::cube import_cube(tokenizer &tokens, const parse_boolean::complement &syntax, boolean::variable_set &variables, bool auto_define = false);
+boolean::cube import_cube(tokenizer &tokens, const parse_boolean::conjunction &syntax, boolean::variable_set &variables, bool auto_define = false);
+boolean::cube import_cube(tokenizer &tokens, const parse_boolean::disjunction &syntax, boolean::variable_set &variables, bool auto_define = false);
+
 #endif
