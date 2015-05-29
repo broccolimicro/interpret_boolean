@@ -35,7 +35,7 @@ parse_boolean::variable_name export_variable_name(boolean::variable variable)
 	return result;
 }
 
-parse_boolean::variable_name export_variable_name(int variable, boolean::variable_set &variables)
+parse_boolean::variable_name export_variable_name(int variable, const boolean::variable_set &variables)
 {
 	parse_boolean::variable_name result;
 	if (variable >= 0 && variable < (int)variables.variables.size())
@@ -43,7 +43,7 @@ parse_boolean::variable_name export_variable_name(int variable, boolean::variabl
 	return result;
 }
 
-vector<parse_boolean::variable_name> export_variable_names(boolean::variable_set &variables)
+vector<parse_boolean::variable_name> export_variable_names(const boolean::variable_set &variables)
 {
 	vector<parse_boolean::variable_name> result;
 
@@ -53,7 +53,7 @@ vector<parse_boolean::variable_name> export_variable_names(boolean::variable_set
 	return result;
 }
 
-parse_boolean::assignment export_assignment(int variable, bool value, boolean::variable_set &variables)
+parse_boolean::assignment export_assignment(int variable, bool value, const boolean::variable_set &variables)
 {
 	parse_boolean::assignment result;
 	result.valid = true;
@@ -62,7 +62,7 @@ parse_boolean::assignment export_assignment(int variable, bool value, boolean::v
 	return result;
 }
 
-parse_boolean::internal_parallel export_internal_parallel(boolean::cube c, boolean::variable_set &variables)
+parse_boolean::internal_parallel export_internal_parallel(boolean::cube c, const boolean::variable_set &variables)
 {
 	parse_boolean::internal_parallel result;
 	result.valid = true;
@@ -80,7 +80,7 @@ parse_boolean::internal_parallel export_internal_parallel(boolean::cube c, boole
 	return result;
 }
 
-parse_boolean::internal_choice export_internal_choice(boolean::cover c, boolean::variable_set &variables)
+parse_boolean::internal_choice export_internal_choice(boolean::cover c, const boolean::variable_set &variables)
 {
 	parse_boolean::internal_choice result;
 	result.valid = true;
@@ -89,7 +89,7 @@ parse_boolean::internal_choice export_internal_choice(boolean::cover c, boolean:
 	return result;
 }
 
-parse_boolean::complement export_complement(bool value, boolean::variable_set &variables)
+parse_boolean::complement export_complement(bool value, const boolean::variable_set &variables)
 {
 	parse_boolean::complement result;
 	result.valid = true;
@@ -97,7 +97,7 @@ parse_boolean::complement export_complement(bool value, boolean::variable_set &v
 	return result;
 }
 
-parse_boolean::complement export_complement(int variable, bool value, boolean::variable_set &variables)
+parse_boolean::complement export_complement(int variable, bool value, const boolean::variable_set &variables)
 {
 	parse_boolean::complement result;
 	result.valid = true;
@@ -106,7 +106,7 @@ parse_boolean::complement export_complement(int variable, bool value, boolean::v
 	return result;
 }
 
-parse_boolean::conjunction export_conjunction(boolean::cube c, boolean::variable_set &variables)
+parse_boolean::conjunction export_conjunction(boolean::cube c, const boolean::variable_set &variables)
 {
 	parse_boolean::conjunction result;
 	result.valid = true;
@@ -124,7 +124,7 @@ parse_boolean::conjunction export_conjunction(boolean::cube c, boolean::variable
 	return result;
 }
 
-parse_boolean::disjunction export_disjunction(boolean::cover c, boolean::variable_set &variables)
+parse_boolean::disjunction export_disjunction(boolean::cover c, const boolean::variable_set &variables)
 {
 	parse_boolean::disjunction result;
 	result.valid = true;
