@@ -10,6 +10,7 @@
 #include <boolean/variable.h>
 #include <boolean/cube.h>
 #include <boolean/cover.h>
+#include <boolean/factor.h>
 
 #include <parse_boolean/variable_name.h>
 #include <parse_boolean/assignment.h>
@@ -37,5 +38,7 @@ parse_boolean::complement export_complement(bool value, const boolean::variable_
 parse_boolean::complement export_complement(int variable, bool value, const boolean::variable_set &variables);
 parse_boolean::conjunction export_conjunction(boolean::cube c, const boolean::variable_set &variables);
 parse_boolean::disjunction export_disjunction(boolean::cover c, const boolean::variable_set &variables);
+
+parse_boolean::disjunction export_disjunction(boolean::factor f, const boolean::variable_set &variables);
 
 #endif

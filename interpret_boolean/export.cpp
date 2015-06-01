@@ -133,3 +133,85 @@ parse_boolean::disjunction export_disjunction(boolean::cover c, const boolean::v
 	return result;
 }
 
+parse_boolean::complement export_complement(boolean::factor f, const boolean::variable_set &variables)
+{
+	parse_boolean::complement result;
+	result.valid = true;
+	if (f.subfactors.size() == 0)
+	{
+		/*if (f.op == boolean::factor::AND)
+		{
+			f.terms = ~f.terms;
+			f.op = 1-f.op;
+		}*/
+
+		result.expression = new parse_boolean::disjunction();
+		*result.expression = export_disjunction(f.terms, variables);
+	}
+	else
+	{
+		result.expression = new parse_boolean::disjunction();
+		*result.expression = export_disjunction(f, variables);
+	}
+	return result;
+}
+
+parse_boolean::conjunction export_conjunction(boolean::factor f, const boolean::variable_set &variables)
+{
+	parse_boolean::conjunction result;
+	result.valid = true;
+	if (f.op == boolean::factor::OR || f.subfactors.size() == 0)
+		result.branches.push_back(export_complement(f, variables));
+	else if (f.subfactors.size() > 0)
+	{
+		parse_boolean::complement tmp;
+		tmp.valid = true;
+		tmp.expression = new parse_boolean::disjunction();
+		*tmp.expression = export_disjunction(f.terms, variables);
+		result.branches.push_back(tmp);
+
+		for (int i = 0; i < (int)f.subfactors.size(); i++)
+		{
+			if (f.subfactors[i].op == boolean::factor::OR)
+				result.branches.push_back(export_complement(f.subfactors[i], variables));
+			else
+			{
+				parse_boolean::conjunction temp = export_conjunction(f.subfactors[i], variables);
+				result.branches.insert(result.branches.end(), temp.branches.begin(), temp.branches.end());
+			}
+		}
+	}
+
+	return result;
+}
+
+parse_boolean::disjunction export_disjunction(boolean::factor f, const boolean::variable_set &variables)
+{
+	parse_boolean::disjunction result;
+	result.valid = true;
+	if (f.op == boolean::factor::AND)
+		result.branches.push_back(export_conjunction(f, variables));
+	else if (f.subfactors.size() > 0)
+	{
+		for (int i = 0; i < (int)f.terms.cubes.size(); i++)
+			result.branches.push_back(export_conjunction(f.terms.cubes[i], variables));
+
+		for (int i = 0; i < (int)f.subfactors.size(); i++)
+		{
+			if (f.subfactors[i].op == boolean::factor::AND)
+				result.branches.push_back(export_conjunction(f.subfactors[i], variables));
+			else
+			{
+				parse_boolean::disjunction temp = export_disjunction(f.subfactors[i], variables);
+				result.branches.insert(result.branches.end(), temp.branches.begin(), temp.branches.end());
+			}
+		}
+	}
+	else
+	{
+		parse_boolean::disjunction temp = export_disjunction(f.terms, variables);
+		result.branches.insert(result.branches.end(), temp.branches.begin(), temp.branches.end());
+	}
+
+	return result;
+}
