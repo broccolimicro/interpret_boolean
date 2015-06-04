@@ -34,8 +34,10 @@ vector<boolean::instance> import_instances(const parse_boolean::member_name &syn
 
 vector<boolean::variable> import_variables(const parse_boolean::variable_name &syntax, tokenizer *tokens)
 {
-	vector<boolean::variable> result;
-	result.push_back(boolean::variable());
+	vector<boolean::variable> result(1, boolean::variable());
+	if (syntax.region != "")
+		result.back().region = atoi(syntax.region.c_str());
+
 	for (int i = 0; i < (int)syntax.names.size(); i++)
 	{
 		vector<boolean::instance> instances = import_instances(syntax.names[i], tokens);
@@ -119,6 +121,8 @@ boolean::cover import_cover(const parse_boolean::assignment &syntax, boolean::va
 			error(syntax.to_string(), "unrecognized operation", __FILE__, __LINE__);
 		return boolean::cover(0);
 	}
+	else if (syntax.literals.size() == 0 && syntax.assignments.size() == 0)
+		return boolean::cover(1);
 
 	boolean::cover result(1-syntax.operation);
 
@@ -165,6 +169,8 @@ boolean::cube import_cube(const parse_boolean::assignment &syntax, boolean::vari
 			error(syntax.to_string(), "unrecognized operation", __FILE__, __LINE__);
 		return boolean::cube(0);
 	}
+	else if (syntax.literals.size() == 0 && syntax.assignments.size() == 0)
+		return boolean::cube(1);
 
 	boolean::cover result(1-syntax.operation);
 

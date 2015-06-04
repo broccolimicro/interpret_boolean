@@ -33,6 +33,7 @@ parse_boolean::variable_name export_variable_name(boolean::variable variable)
 	result.valid = true;
 	for (int i = 0; i < (int)variable.name.size(); i++)
 		result.names.push_back(export_member_name(variable.name[i]));
+	result.region = ::to_string(variable.region);
 	return result;
 }
 
