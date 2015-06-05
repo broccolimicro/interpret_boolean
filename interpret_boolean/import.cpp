@@ -32,9 +32,10 @@ vector<boolean::instance> import_instances(const parse_boolean::member_name &syn
 	return result;
 }
 
-vector<boolean::variable> import_variables(const parse_boolean::variable_name &syntax, tokenizer *tokens)
+vector<boolean::variable> import_variables(const parse_boolean::variable_name &syntax, int default_id, tokenizer *tokens)
 {
 	vector<boolean::variable> result(1, boolean::variable());
+	result.back().region = default_id;
 	if (syntax.region != "")
 		result.back().region = atoi(syntax.region.c_str());
 
@@ -57,9 +58,9 @@ vector<boolean::variable> import_variables(const parse_boolean::variable_name &s
 	return result;
 }
 
-vector<int> define_variables(const parse_boolean::variable_name &syntax, boolean::variable_set &variables, tokenizer *tokens, bool define, bool squash_errors)
+vector<int> define_variables(const parse_boolean::variable_name &syntax, boolean::variable_set &variables, int default_id, tokenizer *tokens, bool define, bool squash_errors)
 {
-	vector<boolean::variable> v = import_variables(syntax, tokens);
+	vector<boolean::variable> v = import_variables(syntax, default_id, tokens);
 	vector<int> result;
 	for (int i = 0; i < (int)v.size(); i++)
 	{
@@ -108,8 +109,11 @@ vector<int> define_variables(const parse_boolean::variable_name &syntax, boolean
 	return result;
 }
 
-boolean::cover import_cover(const parse_boolean::assignment &syntax, boolean::variable_set &variables, tokenizer *tokens, bool auto_define)
+boolean::cover import_cover(const parse_boolean::assignment &syntax, boolean::variable_set &variables, int default_id, tokenizer *tokens, bool auto_define)
 {
+	if (syntax.region != "")
+		default_id = atoi(syntax.region.c_str());
+
 	if (syntax.operation != parse_boolean::assignment::CHOICE && syntax.operation != parse_boolean::assignment::PARALLEL)
 	{
 		if (tokens != NULL)
@@ -130,7 +134,7 @@ boolean::cover import_cover(const parse_boolean::assignment &syntax, boolean::va
 	{
 		if (syntax.literals[i].first.valid)
 		{
-			vector<int> v = define_variables(syntax.literals[i].first, variables, tokens, auto_define, auto_define);
+			vector<int> v = define_variables(syntax.literals[i].first, variables, default_id, tokens, auto_define, auto_define);
 			for (int j = 0; j < (int)v.size(); j++)
 				if (v[j] >= 0)
 				{
@@ -147,17 +151,20 @@ boolean::cover import_cover(const parse_boolean::assignment &syntax, boolean::va
 		if (syntax.assignments[i].valid)
 		{
 			if (syntax.operation == parse_boolean::assignment::CHOICE)
-				result |= import_cover(syntax.assignments[i], variables, tokens, auto_define);
+				result |= import_cover(syntax.assignments[i], variables, default_id, tokens, auto_define);
 			else if (syntax.operation == parse_boolean::assignment::PARALLEL)
-				result &= import_cover(syntax.assignments[i], variables, tokens, auto_define);
+				result &= import_cover(syntax.assignments[i], variables, default_id, tokens, auto_define);
 		}
 	}
 
 	return result;
 }
 
-boolean::cube import_cube(const parse_boolean::assignment &syntax, boolean::variable_set &variables, tokenizer *tokens, bool auto_define)
+boolean::cube import_cube(const parse_boolean::assignment &syntax, boolean::variable_set &variables, int default_id, tokenizer *tokens, bool auto_define)
 {
+	if (syntax.region != "")
+		default_id = atoi(syntax.region.c_str());
+
 	if (syntax.operation != parse_boolean::assignment::CHOICE && syntax.operation != parse_boolean::assignment::PARALLEL)
 	{
 		if (tokens != NULL)
@@ -178,7 +185,7 @@ boolean::cube import_cube(const parse_boolean::assignment &syntax, boolean::vari
 	{
 		if (syntax.literals[i].first.valid)
 		{
-			vector<int> v = define_variables(syntax.literals[i].first, variables, tokens, auto_define, auto_define);
+			vector<int> v = define_variables(syntax.literals[i].first, variables, default_id, tokens, auto_define, auto_define);
 			for (int j = 0; j < (int)v.size(); j++)
 				if (v[j] >= 0)
 				{
@@ -195,9 +202,9 @@ boolean::cube import_cube(const parse_boolean::assignment &syntax, boolean::vari
 		if (syntax.assignments[i].valid)
 		{
 			if (syntax.operation == parse_boolean::assignment::CHOICE)
-				result |= import_cube(syntax.assignments[i], variables, tokens, auto_define);
+				result |= import_cube(syntax.assignments[i], variables, default_id, tokens, auto_define);
 			else if (syntax.operation == parse_boolean::assignment::PARALLEL)
-				result &= import_cube(syntax.assignments[i], variables, tokens, auto_define);
+				result &= import_cube(syntax.assignments[i], variables, default_id, tokens, auto_define);
 		}
 	}
 
@@ -218,8 +225,11 @@ boolean::cube import_cube(const parse_boolean::assignment &syntax, boolean::vari
 		return boolean::cube(0);
 }
 
-boolean::cover import_cover(const parse_boolean::guard &syntax, boolean::variable_set &variables, tokenizer *tokens, bool auto_define)
+boolean::cover import_cover(const parse_boolean::guard &syntax, boolean::variable_set &variables, int default_id, tokenizer *tokens, bool auto_define)
 {
+	if (syntax.region != "")
+		default_id = atoi(syntax.region.c_str());
+
 	if (syntax.operation != parse_boolean::guard::OR && syntax.operation != parse_boolean::guard::AND)
 	{
 		if (tokens != NULL)
@@ -246,7 +256,7 @@ boolean::cover import_cover(const parse_boolean::guard &syntax, boolean::variabl
 	{
 		if (syntax.literals[i].first.valid)
 		{
-			vector<int> v = define_variables(syntax.literals[i].first, variables, tokens, auto_define, auto_define);
+			vector<int> v = define_variables(syntax.literals[i].first, variables, default_id, tokens, auto_define, auto_define);
 			for (int j = 0; j < (int)v.size(); j++)
 				if (v[j] >= 0)
 				{
@@ -262,7 +272,7 @@ boolean::cover import_cover(const parse_boolean::guard &syntax, boolean::variabl
 	{
 		if (syntax.guards[i].first.valid)
 		{
-			boolean::cover sub(import_cover(syntax.guards[i].first, variables, tokens, auto_define));
+			boolean::cover sub(import_cover(syntax.guards[i].first, variables, default_id, tokens, auto_define));
 			if (syntax.guards[i].second)
 				sub = ~sub;
 
@@ -276,8 +286,11 @@ boolean::cover import_cover(const parse_boolean::guard &syntax, boolean::variabl
 	return result;
 }
 
-boolean::cube import_cube(const parse_boolean::guard &syntax, boolean::variable_set &variables, tokenizer *tokens, bool auto_define)
+boolean::cube import_cube(const parse_boolean::guard &syntax, boolean::variable_set &variables, int default_id, tokenizer *tokens, bool auto_define)
 {
+	if (syntax.region != "")
+		default_id = atoi(syntax.region.c_str());
+
 	if (syntax.operation != parse_boolean::guard::OR && syntax.operation != parse_boolean::guard::AND)
 	{
 		if (tokens != NULL)
@@ -303,7 +316,7 @@ boolean::cube import_cube(const parse_boolean::guard &syntax, boolean::variable_
 	{
 		if (syntax.literals[i].first.valid)
 		{
-			vector<int> v = define_variables(syntax.literals[i].first, variables, tokens, auto_define, auto_define);
+			vector<int> v = define_variables(syntax.literals[i].first, variables, default_id, tokens, auto_define, auto_define);
 			for (int j = 0; j < (int)v.size(); j++)
 				if (v[j] >= 0)
 				{
@@ -319,7 +332,7 @@ boolean::cube import_cube(const parse_boolean::guard &syntax, boolean::variable_
 	{
 		if (syntax.guards[i].first.valid)
 		{
-			boolean::cover sub(import_cube(syntax.guards[i].first, variables, tokens, auto_define));
+			boolean::cover sub(import_cube(syntax.guards[i].first, variables, default_id, tokens, auto_define));
 			if (syntax.guards[i].second)
 				sub = ~sub;
 
