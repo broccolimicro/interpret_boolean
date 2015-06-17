@@ -62,16 +62,8 @@ parse_boolean::assignment export_assignment(boolean::cube c, const boolean::vari
 	result.valid = true;
 
 	for (int i = 0; i < (int)variables.variables.size(); i++)
-	{
-		int value = c.get(i);
-		if (value == 0 || value == 1)
-			result.literals.push_back(pair<parse_boolean::variable_name, bool>(export_variable_name(i, variables), 1-c.get(i)));
-		else if (value == -1)
-		{
-			result.literals.push_back(pair<parse_boolean::variable_name, bool>(export_variable_name(i, variables), 1));
-			result.literals.push_back(pair<parse_boolean::variable_name, bool>(export_variable_name(i, variables), 0));
-		}
-	}
+		if (c.get(i) != 2)
+			result.literals.push_back(pair<parse_boolean::variable_name, int>(export_variable_name(i, variables), c.get(i)));
 
 	return result;
 }
@@ -94,16 +86,8 @@ parse_boolean::guard export_guard(boolean::cube c, const boolean::variable_set &
 	result.operation = parse_boolean::guard::AND;
 	result.valid = true;
 	for (int i = 0; i < (int)variables.variables.size(); i++)
-	{
-		int value = c.get(i);
-		if (value == 0 || value == 1)
-			result.literals.push_back(pair<parse_boolean::variable_name, bool>(export_variable_name(i, variables), 1-c.get(i)));
-		else if (value == -1)
-		{
-			result.literals.push_back(pair<parse_boolean::variable_name, bool>(export_variable_name(i, variables), 1));
-			result.literals.push_back(pair<parse_boolean::variable_name, bool>(export_variable_name(i, variables), 0));
-		}
-	}
+		if (c.get(i) != 2)
+			result.literals.push_back(pair<parse_boolean::variable_name, int>(export_variable_name(i, variables), c.get(i)));
 
 	if (result.literals.size() == 0)
 		result.constants.push_back("1");
@@ -132,7 +116,7 @@ parse_boolean::guard export_guard_xfactor(boolean::cover c, const boolean::varia
 		}
 
 		for (int i = 0; i < (int)c.cubes.size(); i++)
-			result.guards.push_back(pair<parse_boolean::guard, bool>(export_guard(c.cubes[i], variables), false));
+			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard(c.cubes[i], variables), 1));
 	}
 	else
 	{
@@ -144,20 +128,20 @@ parse_boolean::guard export_guard_xfactor(boolean::cover c, const boolean::varia
 
 		if (c_weight <= nc_weight)
 		{
-			result.guards.push_back(pair<parse_boolean::guard, bool>(export_guard_xfactor(c_left, variables, op), false));
-			result.guards.push_back(pair<parse_boolean::guard, bool>(export_guard_xfactor(c_right, variables, op), false));
+			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_xfactor(c_left, variables, op), 1));
+			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_xfactor(c_right, variables, op), 1));
 		}
 		else if (nc_weight < c_weight)
 		{
-			result.guards.push_back(pair<parse_boolean::guard, bool>(export_guard_xfactor(nc_left, variables, 1-op), false));
-			result.guards.push_back(pair<parse_boolean::guard, bool>(export_guard_xfactor(nc_right, variables, 1-op), false));
+			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_xfactor(nc_left, variables, 1-op), 1));
+			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_xfactor(nc_right, variables, 1-op), 1));
 			result.operation = 1-op;
 		}
 	}
 
 	for (int i = 0; i < (int)result.guards.size(); )
 	{
-		if (!result.guards[i].second && (result.guards[i].first.operation == result.operation || (result.guards[i].first.guards.size() + result.guards[i].first.literals.size() + result.guards[i].first.constants.size() == 1)))
+		if (result.guards[i].second == 1 && (result.guards[i].first.operation == result.operation || (result.guards[i].first.guards.size() + result.guards[i].first.literals.size() + result.guards[i].first.constants.size() == 1)))
 		{
 			result.guards.insert(result.guards.end(), result.guards[i].first.guards.begin(), result.guards[i].first.guards.end());
 			result.literals.insert(result.literals.end(), result.guards[i].first.literals.begin(), result.guards[i].first.literals.end());
@@ -182,7 +166,7 @@ parse_boolean::guard export_guard_hfactor(boolean::cover c, const boolean::varia
 	else if (c.is_tautology())
 		result.constants.push_back("1");
 	else if (c.cubes.size() == 1)
-		result.guards.push_back(pair<parse_boolean::guard, bool>(export_guard(c.cubes[0], variables), false));
+		result.guards.push_back(pair<parse_boolean::guard, int>(export_guard(c.cubes[0], variables), 1));
 	else
 	{
 		boolean::cube common = c.supercube();
@@ -191,22 +175,22 @@ parse_boolean::guard export_guard_hfactor(boolean::cover c, const boolean::varia
 			boolean::cover c_left, c_right;
 			c.partition(c_left, c_right);
 
-			result.guards.push_back(pair<parse_boolean::guard, bool>(export_guard_hfactor(c_left, variables), false));
-			result.guards.push_back(pair<parse_boolean::guard, bool>(export_guard_hfactor(c_right, variables), false));
+			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_hfactor(c_left, variables), 1));
+			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_hfactor(c_right, variables), 1));
 		}
 		else
 		{
 			c.cofactor(common);
 
-			result.guards.push_back(pair<parse_boolean::guard, bool>(export_guard(common, variables), false));
-			result.guards.push_back(pair<parse_boolean::guard, bool>(export_guard_hfactor(c, variables), false));
+			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard(common, variables), 1));
+			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_hfactor(c, variables), 1));
 			result.operation = parse_boolean::guard::AND;
 		}
 	}
 
 	for (int i = 0; i < (int)result.guards.size(); )
 	{
-		if (!result.guards[i].second && (result.guards[i].first.operation == result.operation || (result.guards[i].first.guards.size() + result.guards[i].first.literals.size() + result.guards[i].first.constants.size() == 1)))
+		if (result.guards[i].second == 1 && (result.guards[i].first.operation == result.operation || (result.guards[i].first.guards.size() + result.guards[i].first.literals.size() + result.guards[i].first.constants.size() == 1)))
 		{
 			result.guards.insert(result.guards.end(), result.guards[i].first.guards.begin(), result.guards[i].first.guards.end());
 			result.literals.insert(result.literals.end(), result.guards[i].first.literals.begin(), result.guards[i].first.literals.end());
@@ -227,7 +211,7 @@ parse_boolean::guard export_guard(boolean::cover c, const boolean::variable_set 
 	result.valid = true;
 
 	for (int i = 0; i < (int)c.cubes.size(); i++)
-		result.guards.push_back(pair<parse_boolean::guard, bool>(export_guard(c.cubes[i], variables), false));
+		result.guards.push_back(pair<parse_boolean::guard, int>(export_guard(c.cubes[i], variables), 1));
 
 	if (c.cubes.size() == 0)
 	{

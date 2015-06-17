@@ -139,9 +139,9 @@ boolean::cover import_cover(const parse_boolean::assignment &syntax, boolean::va
 				if (v[j] >= 0)
 				{
 					if (syntax.operation == parse_boolean::assignment::CHOICE)
-						result |= boolean::cube(v[j], 1-syntax.literals[i].second);
+						result |= boolean::cube(v[j], syntax.literals[i].second);
 					else if (syntax.operation == parse_boolean::assignment::PARALLEL)
-						result &= boolean::cube(v[j], 1-syntax.literals[i].second);
+						result &= boolean::cube(v[j], syntax.literals[i].second);
 				}
 		}
 	}
@@ -174,41 +174,11 @@ boolean::cube import_cube(const parse_boolean::assignment &syntax, boolean::vari
 		}
 		else
 			error(syntax.to_string(), "unrecognized operation", __FILE__, __LINE__);
-		return boolean::cube(0);
+		return boolean::cube(1);
 	}
 	else if (syntax.literals.size() == 0 && syntax.assignments.size() == 0)
 		return boolean::cube(1);
-
-	boolean::cover result(1-syntax.operation);
-
-	for (int i = 0; i < (int)syntax.literals.size(); i++)
-	{
-		if (syntax.literals[i].first.valid)
-		{
-			vector<int> v = define_variables(syntax.literals[i].first, variables, default_id, tokens, auto_define, auto_define);
-			for (int j = 0; j < (int)v.size(); j++)
-				if (v[j] >= 0)
-				{
-					if (syntax.operation == parse_boolean::assignment::CHOICE)
-						result |= boolean::cube(v[j], 1-syntax.literals[i].second);
-					else if (syntax.operation == parse_boolean::assignment::PARALLEL)
-						result &= boolean::cube(v[j], 1-syntax.literals[i].second);
-				}
-		}
-	}
-
-	for (int i = 0; i < (int)syntax.assignments.size(); i++)
-	{
-		if (syntax.assignments[i].valid)
-		{
-			if (syntax.operation == parse_boolean::assignment::CHOICE)
-				result |= import_cube(syntax.assignments[i], variables, default_id, tokens, auto_define);
-			else if (syntax.operation == parse_boolean::assignment::PARALLEL)
-				result &= import_cube(syntax.assignments[i], variables, default_id, tokens, auto_define);
-		}
-	}
-
-	if (result.cubes.size() > 1)
+	else if (syntax.operation == parse_boolean::assignment::CHOICE && syntax.literals.size() + syntax.assignments.size() > 1)
 	{
 		if (tokens != NULL)
 		{
@@ -217,12 +187,27 @@ boolean::cube import_cube(const parse_boolean::assignment &syntax, boolean::vari
 		}
 		else
 			error(syntax.to_string(), "illegal disjunction", __FILE__, __LINE__);
-		return result[0];
+		return boolean::cube();
 	}
-	else if (result.cubes.size() == 1)
-		return result[0];
-	else
-		return boolean::cube(0);
+
+	boolean::cube result;
+
+	for (int i = 0; i < (int)syntax.literals.size(); i++)
+	{
+		if (syntax.literals[i].first.valid)
+		{
+			vector<int> v = define_variables(syntax.literals[i].first, variables, default_id, tokens, auto_define, auto_define);
+			for (int j = 0; j < (int)v.size(); j++)
+				if (v[j] >= 0)
+					result &= boolean::cube(v[j], syntax.literals[i].second);
+		}
+	}
+
+	for (int i = 0; i < (int)syntax.assignments.size(); i++)
+		if (syntax.assignments[i].valid)
+			result &= import_cube(syntax.assignments[i], variables, default_id, tokens, auto_define);
+
+	return result;
 }
 
 boolean::cover import_cover(const parse_boolean::guard &syntax, boolean::variable_set &variables, int default_id, tokenizer *tokens, bool auto_define)
@@ -261,9 +246,9 @@ boolean::cover import_cover(const parse_boolean::guard &syntax, boolean::variabl
 				if (v[j] >= 0)
 				{
 					if (syntax.operation == parse_boolean::guard::OR)
-						result |= boolean::cube(v[j], 1-syntax.literals[i].second);
+						result |= boolean::cube(v[j], syntax.literals[i].second);
 					else if (syntax.operation == parse_boolean::guard::AND)
-						result &= boolean::cube(v[j], 1-syntax.literals[i].second);
+						result &= boolean::cube(v[j], syntax.literals[i].second);
 				}
 		}
 	}
@@ -273,7 +258,7 @@ boolean::cover import_cover(const parse_boolean::guard &syntax, boolean::variabl
 		if (syntax.guards[i].first.valid)
 		{
 			boolean::cover sub(import_cover(syntax.guards[i].first, variables, default_id, tokens, auto_define));
-			if (syntax.guards[i].second)
+			if (syntax.guards[i].second == 0)
 				sub = ~sub;
 
 			if (syntax.operation == parse_boolean::guard::OR)
@@ -302,8 +287,19 @@ boolean::cube import_cube(const parse_boolean::guard &syntax, boolean::variable_
 			error(syntax.to_string(), "unrecognized operation", __FILE__, __LINE__);
 		return boolean::cube(0);
 	}
+	else if (syntax.operation == parse_boolean::assignment::CHOICE && syntax.literals.size() + syntax.guards.size() + syntax.constants.size() > 1)
+	{
+		if (tokens != NULL)
+		{
+			tokens->load(&syntax);
+			tokens->error("illegal disjunction", __FILE__, __LINE__);
+		}
+		else
+			error(syntax.to_string(), "illegal disjunction", __FILE__, __LINE__);
+		return boolean::cube();
+	}
 
-	boolean::cover result(1-syntax.operation);
+	boolean::cube result;
 	for (int i = 0; i < (int)syntax.constants.size(); i++)
 	{
 		if (syntax.constants[i] == "0" && syntax.operation == parse_boolean::guard::AND)
@@ -319,12 +315,7 @@ boolean::cube import_cube(const parse_boolean::guard &syntax, boolean::variable_
 			vector<int> v = define_variables(syntax.literals[i].first, variables, default_id, tokens, auto_define, auto_define);
 			for (int j = 0; j < (int)v.size(); j++)
 				if (v[j] >= 0)
-				{
-					if (syntax.operation == parse_boolean::guard::OR)
-						result |= boolean::cube(v[j], 1-syntax.literals[i].second);
-					else if (syntax.operation == parse_boolean::guard::AND)
-						result &= boolean::cube(v[j], 1-syntax.literals[i].second);
-				}
+					result &= boolean::cube(v[j], syntax.literals[i].second);
 		}
 	}
 
@@ -333,30 +324,26 @@ boolean::cube import_cube(const parse_boolean::guard &syntax, boolean::variable_
 		if (syntax.guards[i].first.valid)
 		{
 			boolean::cover sub(import_cube(syntax.guards[i].first, variables, default_id, tokens, auto_define));
-			if (syntax.guards[i].second)
+			if (syntax.guards[i].second == 0)
 				sub = ~sub;
 
-			if (syntax.operation == parse_boolean::guard::OR)
-				result |= sub;
-			else if (syntax.operation == parse_boolean::guard::AND)
-				result &= sub;
+			if (sub.cubes.size() > 1)
+			{
+				if (tokens != NULL)
+				{
+					tokens->load(&syntax);
+					tokens->error("illegal disjunction", __FILE__, __LINE__);
+				}
+				else
+					error(syntax.to_string(), "illegal disjunction", __FILE__, __LINE__);
+			}
+			else if (sub.cubes.size() == 0)
+				return boolean::cube(0);
+
+			result &= sub[0];
 		}
 	}
 
-	if (result.cubes.size() > 1)
-	{
-		if (tokens != NULL)
-		{
-			tokens->load(&syntax);
-			tokens->error("illegal disjunction", __FILE__, __LINE__);
-		}
-		else
-			error(syntax.to_string(), "illegal disjunction", __FILE__, __LINE__);
-		return result[0];
-	}
-	else if (result.cubes.size() == 1)
-		return result[0];
-	else
-		return boolean::cube(0);
+	return result;
 }
 
