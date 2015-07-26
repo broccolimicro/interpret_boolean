@@ -8,115 +8,122 @@
 #include "export.h"
 #include "import.h"
 
-parse_boolean::slice export_slice(int lb, int ub)
+parse_expression::assignment export_assignment(int uid, int value, const ucs::variable_set &variables)
 {
-	parse_boolean::slice result;
-	result.valid = true;
-	result.lower = ::to_string(lb);
-	result.upper = ::to_string(ub);
-	return result;
-}
-
-parse_boolean::member_name export_member_name(boolean::instance instance)
-{
-	parse_boolean::member_name result;
-	result.valid = true;
-	result.name = instance.name;
-	for (int i = 0; i < (int)instance.slice.size(); i++)
-		result.slices.push_back(export_slice(instance.slice[i], instance.slice[i]));
-	return result;
-}
-
-parse_boolean::variable_name export_variable_name(boolean::variable variable)
-{
-	parse_boolean::variable_name result;
-	result.valid = true;
-	for (int i = 0; i < (int)variable.name.size(); i++)
-		result.names.push_back(export_member_name(variable.name[i]));
-	result.region = ::to_string(variable.region);
-	return result;
-}
-
-parse_boolean::variable_name export_variable_name(int variable, const boolean::variable_set &variables)
-{
-	parse_boolean::variable_name result;
-	if (variable >= 0 && variable < (int)variables.variables.size())
-		result = export_variable_name(variables.variables[variable]);
-	return result;
-}
-
-vector<parse_boolean::variable_name> export_variable_names(const boolean::variable_set &variables)
-{
-	vector<parse_boolean::variable_name> result;
-
-	for (int i = 0; i < (int)variables.variables.size(); i++)
-		result.push_back(export_variable_name(i, variables));
-
-	return result;
-}
-
-parse_boolean::assignment export_assignment(boolean::cube c, const boolean::variable_set &variables)
-{
-	parse_boolean::assignment result;
-	result.operation = parse_boolean::assignment::PARALLEL;
+	parse_expression::assignment result;
 	result.valid = true;
 
-	for (int i = 0; i < (int)variables.variables.size(); i++)
+	result.names.push_back(export_variable_name(uid, variables));
+	if (value == 0)
+		result.operation = "-";
+	else if (value == 1)
+		result.operation = "+";
+
+	return result;
+}
+
+parse_expression::composition export_composition(boolean::cube c, const ucs::variable_set &variables)
+{
+	parse_expression::composition result;
+	result.valid = true;
+
+	result.level = 1;//parse_expression::composition::get_level(",");
+
+	for (int i = 0; i < (int)variables.nodes.size(); i++)
 		if (c.get(i) != 2)
-			result.literals.push_back(pair<parse_boolean::variable_name, int>(export_variable_name(i, variables), c.get(i)));
+			result.literals.push_back(export_assignment(i, c.get(i), variables));
 
 	return result;
 }
 
-parse_boolean::assignment export_assignment(boolean::cover c, const boolean::variable_set &variables)
+parse_expression::composition export_composition(boolean::cover c, const ucs::variable_set &variables)
 {
-	parse_boolean::assignment result;
-	result.operation = parse_boolean::assignment::CHOICE;
+	parse_expression::composition result;
 	result.valid = true;
+
+	result.level = 0;//parse_expression::composition::get_level(":");
 
 	for (int i = 0; i < (int)c.cubes.size(); i++)
-		result.assignments.push_back(export_assignment(c.cubes[i], variables));
+		result.compositions.push_back(export_composition(c.cubes[i], variables));
 
 	return result;
 }
 
-parse_boolean::guard export_guard(boolean::cube c, const boolean::variable_set &variables)
+parse_expression::expression export_expression(int uid, int value, const ucs::variable_set &variables)
 {
-	parse_boolean::guard result;
-	result.operation = parse_boolean::guard::AND;
+	parse_expression::expression result;
 	result.valid = true;
-	for (int i = 0; i < (int)variables.variables.size(); i++)
-		if (c.get(i) != 2)
-			result.literals.push_back(pair<parse_boolean::variable_name, int>(export_variable_name(i, variables), c.get(i)));
 
-	if (result.literals.size() == 0)
-		result.constants.push_back("1");
+	result.level = 8;//parse_expression::expression::get_level("~");
+
+	result.arguments.push_back(parse_expression::argument(export_variable_name(uid, variables)));
+	if (value == 0)
+		result.operations.push_back("~");
 
 	return result;
 }
 
-parse_boolean::guard export_guard_xfactor(boolean::cover c, const boolean::variable_set &variables, int op)
+parse_expression::expression export_expression(boolean::cube c, const ucs::variable_set &variables)
 {
-	parse_boolean::guard result;
-	result.operation = op;
+	parse_expression::expression result;
+	result.valid = true;
+
+	result.level = 1;//parse_expression::expression::get_level("&");
+
+	for (int i = 0; i < (int)variables.nodes.size(); i++)
+		if (c.get(i) != 2)
+			result.arguments.push_back(parse_expression::argument(export_expression(i, c.get(i), variables)));
+
+	if (result.arguments.size() == 0)
+		result.arguments.push_back(parse_expression::argument("1"));
+
+	for (int i = 1; i < (int)result.arguments.size(); i++)
+		result.operations.push_back("&");
+
+	return result;
+}
+
+parse_expression::expression export_expression(boolean::cover c, const ucs::variable_set &variables)
+{
+	parse_expression::expression result;
+	result.valid = true;
+
+	result.level = 0;//parse_expression::expression::get_level("|");
+
+	for (int i = 0; i < (int)c.cubes.size(); i++)
+		result.arguments.push_back(parse_expression::argument(export_expression(c.cubes[i], variables)));
+
+	if (c.cubes.size() == 0)
+		result.arguments.push_back(parse_expression::argument("0"));
+
+	for (int i = 1; i < (int)result.arguments.size(); i++)
+		result.operations.push_back("|");
+
+	return result;
+}
+
+parse_expression::expression export_expression_xfactor(boolean::cover c, const ucs::variable_set &variables, int level)
+{
+	parse_expression::expression result;
+	result.level = level;
 	result.valid = true;
 
 	boolean::cover nc = ~c;
 
 	if (c.cubes.size() == 0)
-		result.constants.push_back("0");
+		result.arguments.push_back(parse_expression::argument("0"));
 	else if (nc.cubes.size() == 0)
-		result.constants.push_back("1");
+		result.arguments.push_back(parse_expression::argument("1"));
 	else if (c.cubes.size() == 1 || nc.cubes.size() == 1)
 	{
-		if (op == parse_boolean::guard::AND)
+		if (level == 1)//parse_expression::expression::level_has(level, "&"))
 		{
 			c = nc;
-			result.operation = 1-op;
+			result.level = 0;//parse_expression::expression::get_level("|");
 		}
 
 		for (int i = 0; i < (int)c.cubes.size(); i++)
-			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard(c.cubes[i], variables), 1));
+			result.arguments.push_back(parse_expression::argument(export_expression(c.cubes[i], variables)));
 	}
 	else
 	{
@@ -128,25 +135,26 @@ parse_boolean::guard export_guard_xfactor(boolean::cover c, const boolean::varia
 
 		if (c_weight <= nc_weight)
 		{
-			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_xfactor(c_left, variables, op), 1));
-			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_xfactor(c_right, variables, op), 1));
+			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(c_left, variables, level)));
+			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(c_right, variables, level)));
+			result.operations.push_back(result.precedence[result.level].symbols[0]);
 		}
 		else if (nc_weight < c_weight)
 		{
-			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_xfactor(nc_left, variables, 1-op), 1));
-			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_xfactor(nc_right, variables, 1-op), 1));
-			result.operation = 1-op;
+			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(nc_left, variables, 1-level)));
+			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(nc_right, variables, 1-level)));
+			result.level = 1-level;
+			result.operations.push_back(result.precedence[result.level].symbols[0]);
 		}
 	}
 
-	for (int i = 0; i < (int)result.guards.size(); )
+	for (int i = 0; i < (int)result.arguments.size(); )
 	{
-		if (result.guards[i].second == 1 && (result.guards[i].first.operation == result.operation || (result.guards[i].first.guards.size() + result.guards[i].first.literals.size() + result.guards[i].first.constants.size() == 1)))
+		if (result.arguments[i].sub.valid && (result.arguments[i].sub.level == result.level || (result.arguments[i].sub.arguments.size() == 1 && result.arguments[i].sub.operations.size() == 0)))
 		{
-			result.guards.insert(result.guards.end(), result.guards[i].first.guards.begin(), result.guards[i].first.guards.end());
-			result.literals.insert(result.literals.end(), result.guards[i].first.literals.begin(), result.guards[i].first.literals.end());
-			result.constants.insert(result.constants.end(), result.guards[i].first.constants.begin(), result.guards[i].first.constants.end());
-			result.guards.erase(result.guards.begin() + i);
+			result.arguments.insert(result.arguments.begin() + i+1, result.arguments[i].sub.arguments.begin(), result.arguments[i].sub.arguments.end());
+			result.operations.insert(result.operations.begin() + i, result.arguments[i].sub.operations.begin(), result.arguments[i].sub.operations.end());
+			result.arguments.erase(result.arguments.begin() + i);
 		}
 		else
 			i++;
@@ -155,18 +163,18 @@ parse_boolean::guard export_guard_xfactor(boolean::cover c, const boolean::varia
 	return result;
 }
 
-parse_boolean::guard export_guard_hfactor(boolean::cover c, const boolean::variable_set &variables)
+parse_expression::expression export_expression_hfactor(boolean::cover c, const ucs::variable_set &variables)
 {
-	parse_boolean::guard result;
+	parse_expression::expression result;
 	result.valid = true;
-	result.operation = parse_boolean::guard::OR;
+	result.level = 0;//parse_expression::expression::get_level("|");
 
 	if (c.is_null())
-		result.constants.push_back("0");
+		result.arguments.push_back(parse_expression::argument("0"));
 	else if (c.is_tautology())
-		result.constants.push_back("1");
+		result.arguments.push_back(parse_expression::argument("1"));
 	else if (c.cubes.size() == 1)
-		result.guards.push_back(pair<parse_boolean::guard, int>(export_guard(c.cubes[0], variables), 1));
+		result.arguments.push_back(parse_expression::argument(export_expression(c.cubes[0], variables)));
 	else
 	{
 		boolean::cube common = c.supercube();
@@ -175,48 +183,31 @@ parse_boolean::guard export_guard_hfactor(boolean::cover c, const boolean::varia
 			boolean::cover c_left, c_right;
 			c.partition(c_left, c_right);
 
-			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_hfactor(c_left, variables), 1));
-			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_hfactor(c_right, variables), 1));
+			result.arguments.push_back(parse_expression::argument(export_expression_hfactor(c_left, variables)));
+			result.arguments.push_back(parse_expression::argument(export_expression_hfactor(c_right, variables)));
+			result.operations.push_back("|");
 		}
 		else
 		{
 			c.cofactor(common);
 
-			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard(common, variables), 1));
-			result.guards.push_back(pair<parse_boolean::guard, int>(export_guard_hfactor(c, variables), 1));
-			result.operation = parse_boolean::guard::AND;
+			result.arguments.push_back(parse_expression::argument(export_expression(common, variables)));
+			result.arguments.push_back(parse_expression::argument(export_expression_hfactor(c, variables)));
+			result.operations.push_back("&");
+			result.level = 1;//parse_expression::expression::get_level("&");
 		}
 	}
 
-	for (int i = 0; i < (int)result.guards.size(); )
+	for (int i = 0; i < (int)result.arguments.size(); )
 	{
-		if (result.guards[i].second == 1 && (result.guards[i].first.operation == result.operation || (result.guards[i].first.guards.size() + result.guards[i].first.literals.size() + result.guards[i].first.constants.size() == 1)))
+		if (result.arguments[i].sub.valid && (result.arguments[i].sub.level == result.level || (result.arguments[i].sub.arguments.size() == 1 && result.arguments[i].sub.operations.size() == 0)))
 		{
-			result.guards.insert(result.guards.end(), result.guards[i].first.guards.begin(), result.guards[i].first.guards.end());
-			result.literals.insert(result.literals.end(), result.guards[i].first.literals.begin(), result.guards[i].first.literals.end());
-			result.constants.insert(result.constants.end(), result.guards[i].first.constants.begin(), result.guards[i].first.constants.end());
-			result.guards.erase(result.guards.begin() + i);
+			result.arguments.insert(result.arguments.begin() + i+1, result.arguments[i].sub.arguments.begin(), result.arguments[i].sub.arguments.end());
+			result.operations.insert(result.operations.begin() + i, result.arguments[i].sub.operations.begin(), result.arguments[i].sub.operations.end());
+			result.arguments.erase(result.arguments.begin() + i);
 		}
 		else
 			i++;
-	}
-
-	return result;
-}
-
-parse_boolean::guard export_guard(boolean::cover c, const boolean::variable_set &variables)
-{
-	parse_boolean::guard result;
-	result.operation = parse_boolean::guard::OR;
-	result.valid = true;
-
-	for (int i = 0; i < (int)c.cubes.size(); i++)
-		result.guards.push_back(pair<parse_boolean::guard, int>(export_guard(c.cubes[i], variables), 1));
-
-	if (c.cubes.size() == 0)
-	{
-		result.constants.push_back("0");
-		return result;
 	}
 
 	return result;
