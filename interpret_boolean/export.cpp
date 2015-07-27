@@ -126,6 +126,9 @@ parse_expression::expression export_expression_xfactor(boolean::cover c, const u
 
 		for (int i = 0; i < (int)c.cubes.size(); i++)
 			result.arguments.push_back(parse_expression::argument(export_expression(c.cubes[i], variables)));
+
+		for (int i = 1; i < (int)result.arguments.size(); i++)
+			result.operations.push_back(result.precedence[result.level].symbols[0]);
 	}
 	else
 	{
