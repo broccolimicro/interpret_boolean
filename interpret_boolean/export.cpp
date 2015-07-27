@@ -59,6 +59,8 @@ parse_expression::expression export_expression(int uid, int value, const ucs::va
 	result.arguments.push_back(parse_expression::argument(export_variable_name(uid, variables)));
 	if (value == 0)
 		result.operations.push_back("~");
+	else if (value == -1)
+		result.operations.push_back("?");
 
 	return result;
 }
