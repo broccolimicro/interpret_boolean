@@ -18,6 +18,8 @@ parse_expression::assignment export_assignment(int uid, int value, const ucs::va
 		result.operation = "-";
 	else if (value == 1)
 		result.operation = "+";
+	else if (value == -1)
+		result.operation = "~";
 
 	return result;
 }

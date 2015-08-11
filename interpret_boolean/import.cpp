@@ -19,6 +19,11 @@ boolean::cube import_cube(const parse_expression::assignment &syntax, ucs::varia
 		vector<int> v = define_variables(syntax.names[0], variables, default_id, tokens, auto_define, auto_define);
 		return boolean::cube(v[0], 0);
 	}
+	else if (syntax.operation == "~")
+	{
+		vector<int> v = define_variables(syntax.names[0], variables, default_id, tokens, auto_define, auto_define);
+		return boolean::cube(v[0], -1);
+	}
 	else if (syntax.operation == ":=")
 	{
 		vector<int> v = define_variables(syntax.names[0], variables, default_id, tokens, auto_define, auto_define);
