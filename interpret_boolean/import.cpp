@@ -314,4 +314,117 @@ boolean::cover import_cover(const parse_expression::expression &syntax, ucs::var
 	return result;
 }
 
+boolean::unsigned_int import_unsigned_int(const parse_expression::expression &syntax, map<string, boolean::unsigned_int> &variables, int default_id, tokenizer *tokens)
+{
+	if (syntax.region != "")
+		default_id = atoi(syntax.region.c_str());
 
+	if (syntax.level >= (int)syntax.precedence.size())
+	{
+		if (tokens != NULL)
+		{
+			tokens->load(&syntax);
+			tokens->error("unrecognized operation", __FILE__, __LINE__);
+		}
+		else
+			error(syntax.to_string(), "unrecognized operation", __FILE__, __LINE__);
+		return boolean::unsigned_int(0);
+	}
+
+	boolean::unsigned_int result;
+
+	for (int i = 0; i < (int)syntax.arguments.size(); i++)
+	{
+		// interpret the operands
+		boolean::unsigned_int sub;
+		if (syntax.arguments[i].sub.valid) {
+			sub = import_unsigned_int(syntax.arguments[i].sub, variables, default_id, tokens);
+		} else if (syntax.arguments[i].literal.valid) {
+			map<string, boolean::unsigned_int>::iterator id = variables.find(syntax.arguments[i].literal.to_string());
+			if (id != variables.end()) {
+				sub = id->second;
+			} else {
+				if (tokens != NULL)
+				{
+					tokens->load(&syntax);
+					tokens->error("reference to undefined variable", __FILE__, __LINE__);
+				}
+				else
+					error(syntax.to_string(), "reference to undefined variable", __FILE__, __LINE__);
+			}
+		} else if (syntax.arguments[i].constant.size() > 0) {
+			sub = boolean::unsigned_int(atoi(syntax.arguments[i].constant.c_str()));
+		}
+
+		// interpret the operators
+		bool err = false;
+		if (i == 0) {
+			if (syntax.precedence[syntax.level].type == parse_expression::operation_set::left_unary) {
+				for (int j = (int)syntax.operations.size()-1; j >= 0; j--)
+				{
+					if (syntax.operations[j] == "~") {
+						sub = ~sub;
+					} else if (syntax.operations[j] == "+") {
+					} else if (syntax.operations[j] == "-") {
+						sub = -sub;
+					} else {
+						err = true;
+					}
+				}
+			} else if (syntax.precedence[syntax.level].type == parse_expression::operation_set::right_unary) {
+				for (int j = 0; j < (int)syntax.operations.size(); j++) {
+					err = true;
+				}
+			}
+
+			result = sub;
+		} else if (syntax.operations[i-1] == "|") {
+			result |= sub;
+		} else if (syntax.operations[i-1] == "&") {
+			result &= sub;
+		} else if (syntax.operations[i-1] == "^") {
+			result ^= sub;
+		} else if (syntax.operations[i-1] == "==") {
+			result = (result == sub);
+		} else if (syntax.operations[i-1] == "~=") {
+			result = (result != sub);
+		} else if (syntax.operations[i-1] == "<") {
+			result = (result < sub);
+		} else if (syntax.operations[i-1] == ">") {
+			result = (result > sub);
+		} else if (syntax.operations[i-1] == "<=") {
+			result = (result <= sub);
+		} else if (syntax.operations[i-1] == ">=") {
+			result = (result >= sub);
+		//} else if (syntax.operations[i-1] == "<<") {
+		//	result <<= sub;
+		//} else if (syntax.operations[i-1] == ">>") {
+		//	result >>= sub;
+		} else if (syntax.operations[i-1] == "+") {
+			result += sub;
+		} else if (syntax.operations[i-1] == "-") {
+			result -= sub;
+		} else if (syntax.operations[i-1] == "*") {
+			result *= sub;
+		} else if (syntax.operations[i-1] == "/") {
+			result /= sub;
+		//} else if (syntax.operations[i-1] == "%") {
+		//	result %= sub;
+		} else {
+			err = true;
+		}
+
+		if (err)
+		{
+			if (tokens != NULL)
+			{
+				tokens->load(&syntax);
+				tokens->error("unsupported operation", __FILE__, __LINE__);
+			}
+			else
+				error(syntax.to_string(), "unsupported operation", __FILE__, __LINE__);
+		}
+	}
+
+	return result;
+}
