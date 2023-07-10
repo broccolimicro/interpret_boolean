@@ -314,7 +314,7 @@ boolean::cover import_cover(const parse_expression::expression &syntax, ucs::var
 	return result;
 }
 
-boolean::unsigned_int import_unsigned_int(const parse_expression::expression &syntax, map<string, boolean::unsigned_int> &variables, int default_id, tokenizer *tokens)
+boolean::signed_int import_signed_int(const parse_expression::expression &syntax, map<string, boolean::signed_int> &variables, int default_id, tokenizer *tokens)
 {
 	if (syntax.region != "")
 		default_id = atoi(syntax.region.c_str());
@@ -328,19 +328,19 @@ boolean::unsigned_int import_unsigned_int(const parse_expression::expression &sy
 		}
 		else
 			error(syntax.to_string(), "unrecognized operation", __FILE__, __LINE__);
-		return boolean::unsigned_int(0);
+		return boolean::signed_int(0);
 	}
 
-	boolean::unsigned_int result;
+	boolean::signed_int result;
 
 	for (int i = 0; i < (int)syntax.arguments.size(); i++)
 	{
 		// interpret the operands
-		boolean::unsigned_int sub;
+		boolean::signed_int sub;
 		if (syntax.arguments[i].sub.valid) {
-			sub = import_unsigned_int(syntax.arguments[i].sub, variables, default_id, tokens);
+			sub = import_signed_int(syntax.arguments[i].sub, variables, default_id, tokens);
 		} else if (syntax.arguments[i].literal.valid) {
-			map<string, boolean::unsigned_int>::iterator id = variables.find(syntax.arguments[i].literal.to_string());
+			map<string, boolean::signed_int>::iterator id = variables.find(syntax.arguments[i].literal.to_string());
 			if (id != variables.end()) {
 				sub = id->second;
 			} else {
@@ -353,7 +353,7 @@ boolean::unsigned_int import_unsigned_int(const parse_expression::expression &sy
 					error(syntax.to_string(), "reference to undefined variable", __FILE__, __LINE__);
 			}
 		} else if (syntax.arguments[i].constant.size() > 0) {
-			sub = boolean::unsigned_int(atoi(syntax.arguments[i].constant.c_str()));
+			sub = boolean::signed_int(atoi(syntax.arguments[i].constant.c_str()));
 		}
 
 		// interpret the operators
@@ -385,17 +385,17 @@ boolean::unsigned_int import_unsigned_int(const parse_expression::expression &sy
 		} else if (syntax.operations[i-1] == "^") {
 			result ^= sub;
 		} else if (syntax.operations[i-1] == "==") {
-			result = (result == sub);
+			result = boolean::signed_int(boolean::bitset(result == sub));
 		} else if (syntax.operations[i-1] == "~=") {
-			result = (result != sub);
+			result = boolean::signed_int(boolean::bitset(result != sub));
 		} else if (syntax.operations[i-1] == "<") {
-			result = (result < sub);
+			result = boolean::signed_int(boolean::bitset(result < sub));
 		} else if (syntax.operations[i-1] == ">") {
-			result = (result > sub);
+			result = boolean::signed_int(boolean::bitset(result > sub));
 		} else if (syntax.operations[i-1] == "<=") {
-			result = (result <= sub);
+			result = boolean::signed_int(boolean::bitset(result <= sub));
 		} else if (syntax.operations[i-1] == ">=") {
-			result = (result >= sub);
+			result = boolean::signed_int(boolean::bitset(result >= sub));
 		//} else if (syntax.operations[i-1] == "<<") {
 		//	result <<= sub;
 		//} else if (syntax.operations[i-1] == ">>") {
