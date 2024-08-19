@@ -26,10 +26,11 @@ parse_expression::assignment export_assignment(int uid, int value, const ucs::va
 
 parse_expression::composition export_composition(boolean::cube c, const ucs::variable_set &variables)
 {
+	static const int level = parse_expression::composition::get_level(",");
 	parse_expression::composition result;
 	result.valid = true;
 
-	result.level = 1;//parse_expression::composition::get_level(",");
+	result.level = level;
 
 	for (int i = 0; i < (int)variables.nodes.size(); i++)
 		if (c.get(i) != 2)
@@ -40,10 +41,11 @@ parse_expression::composition export_composition(boolean::cube c, const ucs::var
 
 parse_expression::composition export_composition(boolean::cover c, const ucs::variable_set &variables)
 {
+	static const int level = parse_expression::composition::get_level(":");
 	parse_expression::composition result;
 	result.valid = true;
 
-	result.level = 0;//parse_expression::composition::get_level(":");
+	result.level = level;
 
 	for (int i = 0; i < (int)c.cubes.size(); i++)
 		result.compositions.push_back(export_composition(c.cubes[i], variables));
@@ -53,10 +55,12 @@ parse_expression::composition export_composition(boolean::cover c, const ucs::va
 
 parse_expression::expression export_expression(int uid, int value, const ucs::variable_set &variables)
 {
+	static const int level = parse_expression::expression::get_level("~");
+
 	parse_expression::expression result;
 	result.valid = true;
 
-	result.level = 8;//parse_expression::expression::get_level("~");
+	result.level = level;
 
 	result.arguments.push_back(parse_expression::argument(export_variable_name(uid, variables)));
 	if (value == 0)
@@ -69,10 +73,11 @@ parse_expression::expression export_expression(int uid, int value, const ucs::va
 
 parse_expression::expression export_expression(boolean::cube c, const ucs::variable_set &variables)
 {
+	static const int level = parse_expression::expression::get_level("&");
 	parse_expression::expression result;
 	result.valid = true;
 
-	result.level = 1;//parse_expression::expression::get_level("&");
+	result.level = level;
 
 	for (int i = 0; i < (int)variables.nodes.size(); i++)
 		if (c.get(i) != 2)
@@ -89,10 +94,11 @@ parse_expression::expression export_expression(boolean::cube c, const ucs::varia
 
 parse_expression::expression export_expression(boolean::cover c, const ucs::variable_set &variables)
 {
+	static const int level = parse_expression::expression::get_level("|");
 	parse_expression::expression result;
 	result.valid = true;
 
-	result.level = 0;//parse_expression::expression::get_level("|");
+	result.level = level;
 
 	for (int i = 0; i < (int)c.cubes.size(); i++)
 		result.arguments.push_back(parse_expression::argument(export_expression(c.cubes[i], variables)));
@@ -108,6 +114,8 @@ parse_expression::expression export_expression(boolean::cover c, const ucs::vari
 
 parse_expression::expression export_expression_xfactor(boolean::cover c, const ucs::variable_set &variables, int level)
 {
+	static const int andlevel = parse_expression::expression::get_level("&");
+	static const int orlevel = parse_expression::expression::get_level("|");
 	parse_expression::expression result;
 	result.level = level;
 	result.valid = true;
@@ -120,10 +128,10 @@ parse_expression::expression export_expression_xfactor(boolean::cover c, const u
 		result.arguments.push_back(parse_expression::argument("1"));
 	else if (c.cubes.size() == 1 || nc.cubes.size() == 1)
 	{
-		if (level == 1)//parse_expression::expression::level_has(level, "&"))
+		if (level == andlevel)
 		{
 			c = nc;
-			result.level = 0;//parse_expression::expression::get_level("|");
+			result.level = orlevel;
 		}
 
 		for (int i = 0; i < (int)c.cubes.size(); i++)
@@ -172,9 +180,12 @@ parse_expression::expression export_expression_xfactor(boolean::cover c, const u
 
 parse_expression::expression export_expression_hfactor(boolean::cover c, const ucs::variable_set &variables)
 {
+	static const int andlevel = parse_expression::expression::get_level("&");
+	static const int orlevel = parse_expression::expression::get_level("|");
+
 	parse_expression::expression result;
 	result.valid = true;
-	result.level = 0;//parse_expression::expression::get_level("|");
+	result.level = orlevel;
 
 	if (c.is_null())
 		result.arguments.push_back(parse_expression::argument("0"));
@@ -201,7 +212,7 @@ parse_expression::expression export_expression_hfactor(boolean::cover c, const u
 			result.arguments.push_back(parse_expression::argument(export_expression(common, variables)));
 			result.arguments.push_back(parse_expression::argument(export_expression_hfactor(c, variables)));
 			result.operations.push_back("&");
-			result.level = 1;//parse_expression::expression::get_level("&");
+			result.level = andlevel;
 		}
 	}
 
