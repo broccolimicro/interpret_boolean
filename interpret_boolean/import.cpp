@@ -12,21 +12,33 @@ boolean::cube import_cube(const parse_expression::assignment &syntax, ucs::varia
 	if (syntax.operation == "+")
 	{
 		vector<int> v = define_variables(syntax.names[0], variables, default_id, tokens, auto_define, auto_define);
+		if (v[0] < 0) {
+			v[0] = (-v[0]-1)+(int)variables.nodes.size();
+		}
 		return boolean::cube(v[0], 1);
 	}
 	else if (syntax.operation == "-")
 	{
 		vector<int> v = define_variables(syntax.names[0], variables, default_id, tokens, auto_define, auto_define);
+		if (v[0] < 0) {
+			v[0] = (-v[0]-1)+(int)variables.nodes.size();
+		}
 		return boolean::cube(v[0], 0);
 	}
 	else if (syntax.operation == "~")
 	{
 		vector<int> v = define_variables(syntax.names[0], variables, default_id, tokens, auto_define, auto_define);
+		if (v[0] < 0) {
+			v[0] = (-v[0]-1)+(int)variables.nodes.size();
+		}
 		return boolean::cube(v[0], -1);
 	}
 	else if (syntax.operation == ":=")
 	{
 		vector<int> v = define_variables(syntax.names[0], variables, default_id, tokens, auto_define, auto_define);
+		if (v[0] < 0) {
+			v[0] = (-v[0]-1)+(int)variables.nodes.size();
+		}
 		boolean::cover temp = import_cover(syntax.expressions[0], variables, default_id, tokens, auto_define);
 		if (temp.is_tautology())
 			return boolean::cube(v[0], 1);

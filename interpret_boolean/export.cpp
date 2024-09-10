@@ -86,9 +86,15 @@ parse_expression::expression export_expression(boolean::cube c, const ucs::varia
 
 	result.level = level;
 
-	for (int i = 0; i < (int)variables.nodes.size(); i++)
-		if (c.get(i) != 2)
+	for (int i = 0; i < (int)variables.nodes.size(); i++) {
+		if (c.get(i) != 2) {
+			int uid = i;
+			if (uid >= (int)variables.nodes.size()) {
+				uid = -(uid-(int)variables.nodes.size())-1;
+			}
 			result.arguments.push_back(parse_expression::argument(export_expression(i, c.get(i), variables)));
+		}
+	}
 
 	if (result.arguments.size() == 0)
 		result.arguments.push_back(parse_expression::argument("1"));
