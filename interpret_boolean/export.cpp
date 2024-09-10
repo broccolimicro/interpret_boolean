@@ -32,9 +32,16 @@ parse_expression::composition export_composition(boolean::cube c, const ucs::var
 
 	result.level = level;
 
-	for (int i = 0; i < (int)variables.nodes.size(); i++)
-		if (c.get(i) != 2)
-			result.literals.push_back(export_assignment(i, c.get(i), variables));
+	for (int i = 0; i < c.size()*16; i++) {
+		int val = c.get(i);
+		if (val != 2) {
+			int uid = i;
+			if (uid >= (int)variables.nodes.size()) {
+				uid = -(uid-(int)variables.nodes.size())-1;
+			}
+			result.literals.push_back(export_assignment(uid, val, variables));
+		}
+	}
 
 	return result;
 }
