@@ -206,21 +206,25 @@ boolean::cube import_cube(const parse_expression::expression &syntax, ucs::varia
 		bool err = false;
 		if (i == 0)
 		{
-			if (syntax.precedence[syntax.level].type == parse_expression::operation_set::left_unary)
-				for (int j = (int)syntax.operations.size()-1; j >= 0; j--)
-				{
-					if (syntax.operations[j] == "~")
-					{
+			if (syntax.precedence[syntax.level].type == parse_expression::operation_set::left_unary) {
+				for (int j = (int)syntax.operations.size()-1; j >= 0; j--) {
+					if (syntax.operations[j] == "~") {
 						sub = ~sub;
 						if (sub.cubes.size() > 1)
 							err = true;
-					}
-					else
+					} else if (syntax.operations[j] == "?") {
+						sub = sub.nulled();
+						if (sub.cubes.size() > 1)
+							err = true;
+					} else {
 						err = true;
+					}
 				}
-			else if (i == 0 && syntax.precedence[syntax.level].type == parse_expression::operation_set::right_unary)
-				for (int j = 0; j < (int)syntax.operations.size(); j++)
+			} else if (i == 0 && syntax.precedence[syntax.level].type == parse_expression::operation_set::right_unary) {
+				for (int j = 0; j < (int)syntax.operations.size(); j++) {
 					err = true;
+				}
+			}
 
 			result = sub;
 		}
@@ -293,10 +297,13 @@ boolean::cover import_cover(const parse_expression::expression &syntax, ucs::var
 			if (syntax.precedence[syntax.level].type == parse_expression::operation_set::left_unary)
 				for (int j = (int)syntax.operations.size()-1; j >= 0; j--)
 				{
-					if (syntax.operations[j] == "~")
+					if (syntax.operations[j] == "~") {
 						sub = ~sub;
-					else
+					} else if (syntax.operations[j] == "?") {
+						sub = sub.nulled();
+					} else {
 						err = true;
+					}
 				}
 			else if (syntax.precedence[syntax.level].type == parse_expression::operation_set::right_unary)
 				for (int j = 0; j < (int)syntax.operations.size(); j++)
