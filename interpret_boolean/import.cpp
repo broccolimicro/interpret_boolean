@@ -33,7 +33,7 @@ boolean::cube import_cube(const parse_expression::assignment &syntax, ucs::varia
 		}
 		return boolean::cube(v[0], -1);
 	}
-	else if (syntax.operation == ":=")
+	else if (syntax.operation == "=")
 	{
 		vector<int> v = define_variables(syntax.names[0], variables, default_id, tokens, auto_define, auto_define);
 		if (v[0] < 0) {
