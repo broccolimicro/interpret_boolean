@@ -1,19 +1,23 @@
-/*
- * export.cpp
- *
- *  Created on: Feb 6, 2015
- *      Author: nbingham
- */
-
 #include "export.h"
-#include "import.h"
 
-parse_expression::assignment export_assignment(int uid, int value, const ucs::variable_set &variables)
-{
+namespace boolean {
+
+parse_ucs::variable_name export_net(int uid, ConstNetlist nets) {
+	parse_ucs::variable_name result;
+	result.valid = true;
+	result.names.push_back(parse_ucs::member_name());
+	result.names.back().valid = true;
+	boolean::Net net = nets.netAt(uid);
+	result.names.back().name = net.first;
+	result.region = ::to_string(net.second);
+	return result;
+}
+
+parse_expression::assignment export_assignment(int uid, int value, ConstNetlist nets) {
 	parse_expression::assignment result;
 	result.valid = true;
 
-	result.names.push_back(export_variable_name(uid, variables));
+	result.names.push_back(export_net(uid, nets));
 	if (value == 0)
 		result.operation = "-";
 	else if (value == 1)
@@ -24,44 +28,38 @@ parse_expression::assignment export_assignment(int uid, int value, const ucs::va
 	return result;
 }
 
-parse_expression::composition export_composition(boolean::cube c, const ucs::variable_set &variables)
-{
+parse_expression::composition export_composition(boolean::cube c, ConstNetlist nets) {
 	static const int level = parse_expression::composition::get_level(",");
 	parse_expression::composition result;
 	result.valid = true;
 
 	result.level = level;
 
-	for (int i = 0; i < c.size()*16; i++) {
-		int val = c.get(i);
+	for (int uid = 0; uid < c.size()*16; uid++) {
+		int val = c.get(uid);
 		if (val != 2) {
-			int uid = i;
-			if (uid >= (int)variables.nodes.size()) {
-				uid = -(uid-(int)variables.nodes.size())-1;
-			}
-			result.literals.push_back(export_assignment(uid, val, variables));
+			result.literals.push_back(export_assignment(uid, val, nets));
 		}
 	}
 
 	return result;
 }
 
-parse_expression::composition export_composition(boolean::cover c, const ucs::variable_set &variables)
-{
+parse_expression::composition export_composition(boolean::cover c, ConstNetlist nets) {
 	static const int level = parse_expression::composition::get_level(":");
 	parse_expression::composition result;
 	result.valid = true;
 
 	result.level = level;
 
-	for (int i = 0; i < (int)c.cubes.size(); i++)
-		result.compositions.push_back(export_composition(c.cubes[i], variables));
+	for (int i = 0; i < (int)c.cubes.size(); i++) {
+		result.compositions.push_back(export_composition(c.cubes[i], nets));
+	}
 
 	return result;
 }
 
-parse_expression::expression export_expression(int uid, int value, const ucs::variable_set &variables)
-{
+parse_expression::expression export_expression(int uid, int value, ConstNetlist nets) {
 	static const int level = parse_expression::expression::get_level("~");
 
 	parse_expression::expression result;
@@ -69,7 +67,7 @@ parse_expression::expression export_expression(int uid, int value, const ucs::va
 
 	result.level = level;
 
-	result.arguments.push_back(parse_expression::argument(export_variable_name(uid, variables)));
+	result.arguments.push_back(export_net(uid, nets));
 	if (value == 0)
 		result.operations.push_back("~");
 	else if (value == -1)
@@ -78,7 +76,7 @@ parse_expression::expression export_expression(int uid, int value, const ucs::va
 	return result;
 }
 
-parse_expression::expression export_expression(boolean::cube c, const ucs::variable_set &variables)
+parse_expression::expression export_expression(boolean::cube c, ConstNetlist nets)
 {
 	static const int level = parse_expression::expression::get_level("&");
 	parse_expression::expression result;
@@ -86,13 +84,10 @@ parse_expression::expression export_expression(boolean::cube c, const ucs::varia
 
 	result.level = level;
 
-	for (int i = 0; i < (int)variables.nodes.size(); i++) {
-		if (c.get(i) != 2) {
-			int uid = i;
-			if (uid >= (int)variables.nodes.size()) {
-				uid = -(uid-(int)variables.nodes.size())-1;
-			}
-			result.arguments.push_back(parse_expression::argument(export_expression(i, c.get(i), variables)));
+	for (int uid = 0; uid < c.size()*16; uid++) {
+		int val = c.get(uid);
+		if (val != 2) {
+			result.arguments.push_back(parse_expression::argument(export_expression(uid, val, nets)));
 		}
 	}
 
@@ -105,7 +100,7 @@ parse_expression::expression export_expression(boolean::cube c, const ucs::varia
 	return result;
 }
 
-parse_expression::expression export_expression(boolean::cover c, const ucs::variable_set &variables)
+parse_expression::expression export_expression(boolean::cover c, ConstNetlist nets)
 {
 	static const int level = parse_expression::expression::get_level("|");
 	parse_expression::expression result;
@@ -114,7 +109,7 @@ parse_expression::expression export_expression(boolean::cover c, const ucs::vari
 	result.level = level;
 
 	for (int i = 0; i < (int)c.cubes.size(); i++)
-		result.arguments.push_back(parse_expression::argument(export_expression(c.cubes[i], variables)));
+		result.arguments.push_back(parse_expression::argument(export_expression(c.cubes[i], nets)));
 
 	if (c.cubes.size() == 0)
 		result.arguments.push_back(parse_expression::argument("0"));
@@ -125,7 +120,7 @@ parse_expression::expression export_expression(boolean::cover c, const ucs::vari
 	return result;
 }
 
-parse_expression::expression export_expression_xfactor(boolean::cover c, const ucs::variable_set &variables, int level)
+parse_expression::expression export_expression_xfactor(boolean::cover c, ConstNetlist nets, int level)
 {
 	static const int andlevel = parse_expression::expression::get_level("&");
 	static const int orlevel = parse_expression::expression::get_level("|");
@@ -148,7 +143,7 @@ parse_expression::expression export_expression_xfactor(boolean::cover c, const u
 		}
 
 		for (int i = 0; i < (int)c.cubes.size(); i++)
-			result.arguments.push_back(parse_expression::argument(export_expression(c.cubes[i], variables)));
+			result.arguments.push_back(parse_expression::argument(export_expression(c.cubes[i], nets)));
 
 		for (int i = 1; i < (int)result.arguments.size(); i++)
 			result.operations.push_back(result.precedence[result.level].symbols[0]);
@@ -163,14 +158,14 @@ parse_expression::expression export_expression_xfactor(boolean::cover c, const u
 
 		if (c_weight <= nc_weight)
 		{
-			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(c_left, variables, level)));
-			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(c_right, variables, level)));
+			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(c_left, nets, level)));
+			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(c_right, nets, level)));
 			result.operations.push_back(result.precedence[result.level].symbols[0]);
 		}
 		else if (nc_weight < c_weight)
 		{
-			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(nc_left, variables, 1-level)));
-			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(nc_right, variables, 1-level)));
+			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(nc_left, nets, 1-level)));
+			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(nc_right, nets, 1-level)));
 			result.level = 1-level;
 			result.operations.push_back(result.precedence[result.level].symbols[0]);
 		}
@@ -191,7 +186,7 @@ parse_expression::expression export_expression_xfactor(boolean::cover c, const u
 	return result;
 }
 
-parse_expression::expression export_expression_hfactor(boolean::cover c, const ucs::variable_set &variables)
+parse_expression::expression export_expression_hfactor(boolean::cover c, ConstNetlist nets)
 {
 	static const int andlevel = parse_expression::expression::get_level("&");
 	static const int orlevel = parse_expression::expression::get_level("|");
@@ -205,7 +200,7 @@ parse_expression::expression export_expression_hfactor(boolean::cover c, const u
 	else if (c.is_tautology())
 		result.arguments.push_back(parse_expression::argument("1"));
 	else if (c.cubes.size() == 1)
-		result.arguments.push_back(parse_expression::argument(export_expression(c.cubes[0], variables)));
+		result.arguments.push_back(parse_expression::argument(export_expression(c.cubes[0], nets)));
 	else
 	{
 		boolean::cube common = c.supercube();
@@ -214,16 +209,16 @@ parse_expression::expression export_expression_hfactor(boolean::cover c, const u
 			boolean::cover c_left, c_right;
 			c.partition(c_left, c_right);
 
-			result.arguments.push_back(parse_expression::argument(export_expression_hfactor(c_left, variables)));
-			result.arguments.push_back(parse_expression::argument(export_expression_hfactor(c_right, variables)));
+			result.arguments.push_back(parse_expression::argument(export_expression_hfactor(c_left, nets)));
+			result.arguments.push_back(parse_expression::argument(export_expression_hfactor(c_right, nets)));
 			result.operations.push_back("|");
 		}
 		else
 		{
 			c.cofactor(common);
 
-			result.arguments.push_back(parse_expression::argument(export_expression(common, variables)));
-			result.arguments.push_back(parse_expression::argument(export_expression_hfactor(c, variables)));
+			result.arguments.push_back(parse_expression::argument(export_expression(common, nets)));
+			result.arguments.push_back(parse_expression::argument(export_expression_hfactor(c, nets)));
 			result.operations.push_back("&");
 			result.level = andlevel;
 		}
@@ -244,3 +239,4 @@ parse_expression::expression export_expression_hfactor(boolean::cover c, const u
 	return result;
 }
 
+}

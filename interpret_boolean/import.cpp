@@ -1,80 +1,87 @@
-/*
- * import.cpp
- *
- *  Created on: Feb 6, 2015
- *      Author: nbingham
- */
-
 #include "import.h"
 
-boolean::cube import_cube(const parse_expression::assignment &syntax, ucs::variable_set &variables, int default_id, tokenizer *tokens, bool auto_define)
+namespace boolean {
+
+int import_net(const parse_ucs::variable_name &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define) {
+	int region = default_id;
+	if (syntax.region != "") {
+		region = atoi(syntax.region.c_str());
+	}
+
+	string name;
+	if (syntax.names.size() > 0) {
+		name = syntax.names[0].to_string("");
+	} for (int i = 1; i < (int)syntax.names.size(); i++) {
+		name += "." + syntax.names[i].to_string("");
+	}
+
+	int uid = nets.netIndex(name, region, auto_define);
+	if (uid < 0) {
+		if (tokens != NULL) {
+			tokens->load(&syntax);
+			tokens->error("undefined net '" + name + "'", __FILE__, __LINE__);
+		} else {
+			error("", "undefined net '" + name + "'", __FILE__, __LINE__);
+		}
+	}
+
+	return uid;
+}
+
+boolean::cube import_cube(const parse_expression::assignment &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
 {
-	if (syntax.operation == "+")
-	{
-		vector<int> v = define_variables(syntax.names[0], variables, default_id, tokens, auto_define, auto_define);
-		if (v[0] < 0) {
-			v[0] = (-v[0]-1)+(int)variables.nodes.size();
+	if (syntax.operation == "+"
+		or syntax.operation == "-"
+		or syntax.operation == "~") {
+		int uid = import_net(syntax.names[0], nets, default_id, tokens, auto_define);
+		if (uid < 0) {
+			return boolean::cube();
 		}
-		return boolean::cube(v[0], 1);
-	}
-	else if (syntax.operation == "-")
-	{
-		vector<int> v = define_variables(syntax.names[0], variables, default_id, tokens, auto_define, auto_define);
-		if (v[0] < 0) {
-			v[0] = (-v[0]-1)+(int)variables.nodes.size();
+
+		int value = -1;
+		if (syntax.operation == "+") {
+			value = 1;
+		} else if (syntax.operation == "-") {
+			value = 0;
 		}
-		return boolean::cube(v[0], 0);
-	}
-	else if (syntax.operation == "~")
-	{
-		vector<int> v = define_variables(syntax.names[0], variables, default_id, tokens, auto_define, auto_define);
-		if (v[0] < 0) {
-			v[0] = (-v[0]-1)+(int)variables.nodes.size();
+
+		return boolean::cube(uid, value);
+	} else if (syntax.operation == "=") {
+		int uid = import_net(syntax.names[0], nets, default_id, tokens, auto_define);
+		if (uid < 0) {
+			return boolean::cube();
 		}
-		return boolean::cube(v[0], -1);
-	}
-	else if (syntax.operation == "=")
-	{
-		vector<int> v = define_variables(syntax.names[0], variables, default_id, tokens, auto_define, auto_define);
-		if (v[0] < 0) {
-			v[0] = (-v[0]-1)+(int)variables.nodes.size();
-		}
-		boolean::cover temp = import_cover(syntax.expressions[0], variables, default_id, tokens, auto_define);
-		if (temp.is_tautology())
-			return boolean::cube(v[0], 1);
-		else if (temp.is_null())
-			return boolean::cube(v[0], 0);
-		else
-		{
-			if (tokens != NULL)
-			{
+
+		boolean::cover temp = import_cover(syntax.expressions[0], nets, default_id, tokens, auto_define);
+		if (temp.is_tautology()) {
+			return boolean::cube(uid, 1);
+		} else if (temp.is_null()) {
+			return boolean::cube(uid, 0);
+		} else {
+			if (tokens != NULL) {
 				tokens->load(&syntax.expressions[0]);
 				tokens->error("unsupported operation", __FILE__, __LINE__);
-			}
-			else
+			} else {
 				error(syntax.expressions[0].to_string(), "unsupported operation", __FILE__, __LINE__);
+			}
 			return boolean::cube();
 		}
 	}
-	else
-	{
-		if (tokens != NULL)
-		{
-			tokens->load(&syntax);
-			tokens->error("unsupported operation", __FILE__, __LINE__);
-		}
-		else
-			error(syntax.to_string(), "unsupported operation", __FILE__, __LINE__);
-		return boolean::cube();
+	if (tokens != NULL) {
+		tokens->load(&syntax);
+		tokens->error("unsupported operation", __FILE__, __LINE__);
+	} else {
+		error(syntax.to_string(), "unsupported operation", __FILE__, __LINE__);
 	}
+	return boolean::cube();
 }
 
-boolean::cover import_cover(const parse_expression::assignment &syntax, ucs::variable_set &variables, int default_id, tokenizer *tokens, bool auto_define)
+boolean::cover import_cover(const parse_expression::assignment &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
 {
-	return boolean::cover(import_cube(syntax, variables, default_id, tokens, auto_define));
+	return boolean::cover(import_cube(syntax, nets, default_id, tokens, auto_define));
 }
 
-boolean::cube import_cube(const parse_expression::composition &syntax, ucs::variable_set &variables, int default_id, tokenizer *tokens, bool auto_define)
+boolean::cube import_cube(const parse_expression::composition &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
 {
 	if (syntax.region != "")
 		default_id = atoi(syntax.region.c_str());
@@ -108,16 +115,16 @@ boolean::cube import_cube(const parse_expression::composition &syntax, ucs::vari
 
 	for (int i = 0; i < (int)syntax.literals.size(); i++)
 		if (syntax.literals[i].valid)
-			result &= import_cube(syntax.literals[i], variables, default_id, tokens, auto_define);
+			result &= import_cube(syntax.literals[i], nets, default_id, tokens, auto_define);
 
 	for (int i = 0; i < (int)syntax.compositions.size(); i++)
 		if (syntax.compositions[i].valid)
-			result &= import_cube(syntax.compositions[i], variables, default_id, tokens, auto_define);
+			result &= import_cube(syntax.compositions[i], nets, default_id, tokens, auto_define);
 
 	return result;
 }
 
-boolean::cover import_cover(const parse_expression::composition &syntax, ucs::variable_set &variables, int default_id, tokenizer *tokens, bool auto_define)
+boolean::cover import_cover(const parse_expression::composition &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
 {
 	if (syntax.region != "")
 		default_id = atoi(syntax.region.c_str());
@@ -143,9 +150,9 @@ boolean::cover import_cover(const parse_expression::composition &syntax, ucs::va
 		if (syntax.literals[i].valid)
 		{
 			if (syntax.precedence[syntax.level] == ":")
-				result |= import_cube(syntax.literals[i], variables, default_id, tokens, auto_define);
+				result |= import_cube(syntax.literals[i], nets, default_id, tokens, auto_define);
 			else if (syntax.precedence[syntax.level] == ",")
-				result &= import_cube(syntax.literals[i], variables, default_id, tokens, auto_define);
+				result &= import_cube(syntax.literals[i], nets, default_id, tokens, auto_define);
 		}
 	}
 
@@ -154,16 +161,16 @@ boolean::cover import_cover(const parse_expression::composition &syntax, ucs::va
 		if (syntax.compositions[i].valid)
 		{
 			if (syntax.precedence[syntax.level] == ":")
-				result |= import_cover(syntax.compositions[i], variables, default_id, tokens, auto_define);
+				result |= import_cover(syntax.compositions[i], nets, default_id, tokens, auto_define);
 			else if (syntax.precedence[syntax.level] == ",")
-				result &= import_cover(syntax.compositions[i], variables, default_id, tokens, auto_define);
+				result &= import_cover(syntax.compositions[i], nets, default_id, tokens, auto_define);
 		}
 	}
 
 	return result;
 }
 
-boolean::cube import_cube(const parse_expression::expression &syntax, ucs::variable_set &variables, int default_id, tokenizer *tokens, bool auto_define)
+boolean::cube import_cube(const parse_expression::expression &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
 {
 	if (syntax.region != "")
 		default_id = atoi(syntax.region.c_str());
@@ -182,25 +189,21 @@ boolean::cube import_cube(const parse_expression::expression &syntax, ucs::varia
 
 	boolean::cover result;
 
-	for (int i = 0; i < (int)syntax.arguments.size(); i++)
-	{
+	for (int i = 0; i < (int)syntax.arguments.size(); i++) {
 		// interpret the operands
 		boolean::cover sub;
-		if (syntax.arguments[i].sub.valid)
-			sub = import_cube(syntax.arguments[i].sub, variables, default_id, tokens, auto_define);
-		else if (syntax.arguments[i].literal.valid)
-		{
-			boolean::cube literal;
-			vector<int> v = define_variables(syntax.arguments[i].literal, variables, default_id, tokens, auto_define, auto_define);
-			for (int j = 0; j < (int)v.size(); j++)
-				if (v[j] >= 0)
-					literal &= boolean::cube(v[j], 1);
-			sub = boolean::cover(literal);
-		}
-		else if (syntax.arguments[i].constant == "0")
+		if (syntax.arguments[i].sub.valid) {
+			sub = import_cube(syntax.arguments[i].sub, nets, default_id, tokens, auto_define);
+		} else if (syntax.arguments[i].literal.valid) {
+			int uid = import_net(syntax.arguments[i].literal, nets, default_id, tokens, auto_define);
+			if (uid >= 0) {
+				sub = boolean::cover(boolean::cube(uid, 1));
+			}
+		} else if (syntax.arguments[i].constant == "0") {
 			sub = boolean::cover(0);
-		else if (syntax.arguments[i].constant == "1")
+		} else if (syntax.arguments[i].constant == "1") {
 			sub = boolean::cover(1);
+		}
 
 		// interpret the operators
 		bool err = false;
@@ -251,7 +254,7 @@ boolean::cube import_cube(const parse_expression::expression &syntax, ucs::varia
 		return result.cubes[0];
 }
 
-boolean::cover import_cover(const parse_expression::expression &syntax, ucs::variable_set &variables, int default_id, tokenizer *tokens, bool auto_define)
+boolean::cover import_cover(const parse_expression::expression &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
 {
 	if (syntax.region != "")
 		default_id = atoi(syntax.region.c_str());
@@ -274,21 +277,18 @@ boolean::cover import_cover(const parse_expression::expression &syntax, ucs::var
 	{
 		// interpret the operands
 		boolean::cover sub;
-		if (syntax.arguments[i].sub.valid)
-			sub = import_cover(syntax.arguments[i].sub, variables, default_id, tokens, auto_define);
-		else if (syntax.arguments[i].literal.valid)
-		{
-			boolean::cube literal;
-			vector<int> v = define_variables(syntax.arguments[i].literal, variables, default_id, tokens, auto_define, auto_define);
-			for (int j = 0; j < (int)v.size(); j++)
-				if (v[j] >= 0)
-					literal &= boolean::cube(v[j], 1);
-			sub = boolean::cover(literal);
-		}
-		else if (syntax.arguments[i].constant == "0")
+		if (syntax.arguments[i].sub.valid) {
+			sub = import_cover(syntax.arguments[i].sub, nets, default_id, tokens, auto_define);
+		} else if (syntax.arguments[i].literal.valid) {
+			int uid = import_net(syntax.arguments[i].literal, nets, default_id, tokens, auto_define);
+			if (uid >= 0) {
+				sub = boolean::cover(boolean::cube(uid, 1));
+			}
+		} else if (syntax.arguments[i].constant == "0") {
 			sub = boolean::cover(0);
-		else if (syntax.arguments[i].constant == "1")
+		} else if (syntax.arguments[i].constant == "1") {
 			sub = boolean::cover(1);
+		}
 
 		// interpret the operators
 		bool err = false;
@@ -446,4 +446,6 @@ boolean::unsigned_int import_unsigned_int(const parse_expression::expression &sy
 	}
 
 	return result;
+}
+
 }
