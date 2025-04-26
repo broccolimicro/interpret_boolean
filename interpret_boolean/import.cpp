@@ -2,7 +2,7 @@
 
 namespace boolean {
 
-int import_net(const parse_ucs::variable_name &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define) {
+int import_net(const parse_ucs::variable_name &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define) {
 	int region = default_id;
 	if (syntax.region != "") {
 		region = atoi(syntax.region.c_str());
@@ -15,7 +15,7 @@ int import_net(const parse_ucs::variable_name &syntax, Netlist nets, int default
 		name += "." + syntax.names[i].to_string("");
 	}
 
-	int uid = nets.netIndex(name, region, auto_define);
+	int uid = nets.netIndex(ucs::Net(name, region), auto_define);
 	if (uid < 0) {
 		if (tokens != NULL) {
 			tokens->load(&syntax);
@@ -28,7 +28,7 @@ int import_net(const parse_ucs::variable_name &syntax, Netlist nets, int default
 	return uid;
 }
 
-boolean::cube import_cube(const parse_expression::assignment &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
+boolean::cube import_cube(const parse_expression::assignment &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
 {
 	if (syntax.operation == "+"
 		or syntax.operation == "-"
@@ -76,12 +76,12 @@ boolean::cube import_cube(const parse_expression::assignment &syntax, Netlist ne
 	return boolean::cube();
 }
 
-boolean::cover import_cover(const parse_expression::assignment &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
+boolean::cover import_cover(const parse_expression::assignment &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
 {
 	return boolean::cover(import_cube(syntax, nets, default_id, tokens, auto_define));
 }
 
-boolean::cube import_cube(const parse_expression::composition &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
+boolean::cube import_cube(const parse_expression::composition &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
 {
 	if (syntax.region != "")
 		default_id = atoi(syntax.region.c_str());
@@ -124,7 +124,7 @@ boolean::cube import_cube(const parse_expression::composition &syntax, Netlist n
 	return result;
 }
 
-boolean::cover import_cover(const parse_expression::composition &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
+boolean::cover import_cover(const parse_expression::composition &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
 {
 	if (syntax.region != "")
 		default_id = atoi(syntax.region.c_str());
@@ -170,7 +170,7 @@ boolean::cover import_cover(const parse_expression::composition &syntax, Netlist
 	return result;
 }
 
-boolean::cube import_cube(const parse_expression::expression &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
+boolean::cube import_cube(const parse_expression::expression &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
 {
 	if (syntax.region != "")
 		default_id = atoi(syntax.region.c_str());
@@ -254,7 +254,7 @@ boolean::cube import_cube(const parse_expression::expression &syntax, Netlist ne
 		return result.cubes[0];
 }
 
-boolean::cover import_cover(const parse_expression::expression &syntax, Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
+boolean::cover import_cover(const parse_expression::expression &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define)
 {
 	if (syntax.region != "")
 		default_id = atoi(syntax.region.c_str());

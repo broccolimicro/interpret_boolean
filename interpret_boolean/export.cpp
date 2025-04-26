@@ -2,22 +2,11 @@
 
 namespace boolean {
 
-parse_ucs::variable_name export_net(int uid, ConstNetlist nets) {
-	parse_ucs::variable_name result;
-	result.valid = true;
-	result.names.push_back(parse_ucs::member_name());
-	result.names.back().valid = true;
-	boolean::Net net = nets.netAt(uid);
-	result.names.back().name = net.first;
-	result.region = ::to_string(net.second);
-	return result;
-}
-
-parse_expression::assignment export_assignment(int uid, int value, ConstNetlist nets) {
+parse_expression::assignment export_assignment(int uid, int value, ucs::ConstNetlist nets) {
 	parse_expression::assignment result;
 	result.valid = true;
 
-	result.names.push_back(export_net(uid, nets));
+	result.names.push_back(nets.netAt(uid));
 	if (value == 0)
 		result.operation = "-";
 	else if (value == 1)
@@ -28,7 +17,7 @@ parse_expression::assignment export_assignment(int uid, int value, ConstNetlist 
 	return result;
 }
 
-parse_expression::composition export_composition(boolean::cube c, ConstNetlist nets) {
+parse_expression::composition export_composition(boolean::cube c, ucs::ConstNetlist nets) {
 	static const int level = parse_expression::composition::get_level(",");
 	parse_expression::composition result;
 	result.valid = true;
@@ -45,7 +34,7 @@ parse_expression::composition export_composition(boolean::cube c, ConstNetlist n
 	return result;
 }
 
-parse_expression::composition export_composition(boolean::cover c, ConstNetlist nets) {
+parse_expression::composition export_composition(boolean::cover c, ucs::ConstNetlist nets) {
 	static const int level = parse_expression::composition::get_level(":");
 	parse_expression::composition result;
 	result.valid = true;
@@ -59,7 +48,7 @@ parse_expression::composition export_composition(boolean::cover c, ConstNetlist 
 	return result;
 }
 
-parse_expression::expression export_expression(int uid, int value, ConstNetlist nets) {
+parse_expression::expression export_expression(int uid, int value, ucs::ConstNetlist nets) {
 	static const int level = parse_expression::expression::get_level("~");
 
 	parse_expression::expression result;
@@ -67,7 +56,7 @@ parse_expression::expression export_expression(int uid, int value, ConstNetlist 
 
 	result.level = level;
 
-	result.arguments.push_back(export_net(uid, nets));
+	result.arguments.push_back(parse_ucs::variable_name(nets.netAt(uid)));
 	if (value == 0)
 		result.operations.push_back("~");
 	else if (value == -1)
@@ -76,7 +65,7 @@ parse_expression::expression export_expression(int uid, int value, ConstNetlist 
 	return result;
 }
 
-parse_expression::expression export_expression(boolean::cube c, ConstNetlist nets)
+parse_expression::expression export_expression(boolean::cube c, ucs::ConstNetlist nets)
 {
 	static const int level = parse_expression::expression::get_level("&");
 	parse_expression::expression result;
@@ -100,7 +89,7 @@ parse_expression::expression export_expression(boolean::cube c, ConstNetlist net
 	return result;
 }
 
-parse_expression::expression export_expression(boolean::cover c, ConstNetlist nets)
+parse_expression::expression export_expression(boolean::cover c, ucs::ConstNetlist nets)
 {
 	static const int level = parse_expression::expression::get_level("|");
 	parse_expression::expression result;
@@ -120,7 +109,7 @@ parse_expression::expression export_expression(boolean::cover c, ConstNetlist ne
 	return result;
 }
 
-parse_expression::expression export_expression_xfactor(boolean::cover c, ConstNetlist nets, int level)
+parse_expression::expression export_expression_xfactor(boolean::cover c, ucs::ConstNetlist nets, int level)
 {
 	static const int andlevel = parse_expression::expression::get_level("&");
 	static const int orlevel = parse_expression::expression::get_level("|");
@@ -186,7 +175,7 @@ parse_expression::expression export_expression_xfactor(boolean::cover c, ConstNe
 	return result;
 }
 
-parse_expression::expression export_expression_hfactor(boolean::cover c, ConstNetlist nets)
+parse_expression::expression export_expression_hfactor(boolean::cover c, ucs::ConstNetlist nets)
 {
 	static const int andlevel = parse_expression::expression::get_level("&");
 	static const int orlevel = parse_expression::expression::get_level("|");
