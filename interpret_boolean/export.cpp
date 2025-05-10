@@ -6,7 +6,7 @@ parse_expression::assignment export_assignment(int uid, int value, ucs::ConstNet
 	parse_expression::assignment result;
 	result.valid = true;
 
-	result.names.push_back(nets.netAt(uid));
+	result.names.push_back(ucs::Net(nets.netAt(uid)));
 	if (value == 0)
 		result.operation = "-";
 	else if (value == 1)
