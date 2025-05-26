@@ -22,7 +22,7 @@ parse_expression::expression export_expression(int uid, int value, ucs::ConstNet
 parse_expression::expression export_expression(boolean::cube c, ucs::ConstNetlist nets);
 parse_expression::expression export_expression(boolean::cover c, ucs::ConstNetlist nets);
 
-parse_expression::expression export_expression_xfactor(boolean::cover c, ucs::ConstNetlist nets, int level = 0);
+parse_expression::expression export_expression_xfactor(boolean::cover c, ucs::ConstNetlist nets, int level = -1);
 parse_expression::expression export_expression_hfactor(boolean::cover c, ucs::ConstNetlist nets);
 
 }

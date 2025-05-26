@@ -113,8 +113,9 @@ parse_expression::expression export_expression_xfactor(boolean::cover c, ucs::Co
 {
 	static const int andlevel = parse_expression::expression::get_level("&");
 	static const int orlevel = parse_expression::expression::get_level("|");
+
 	parse_expression::expression result;
-	result.level = level;
+	result.level = level < 0 ? orlevel : level;
 	result.valid = true;
 
 	boolean::cover nc = ~c;
@@ -147,15 +148,15 @@ parse_expression::expression export_expression_xfactor(boolean::cover c, ucs::Co
 
 		if (c_weight <= nc_weight)
 		{
-			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(c_left, nets, level)));
-			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(c_right, nets, level)));
+			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(c_left, nets, result.level)));
+			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(c_right, nets, result.level)));
 			result.operations.push_back(result.precedence[result.level].symbols[0]);
 		}
 		else if (nc_weight < c_weight)
 		{
-			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(nc_left, nets, 1-level)));
-			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(nc_right, nets, 1-level)));
-			result.level = 1-level;
+			result.level = result.level == andlevel ? orlevel : andlevel;
+			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(nc_left, nets, result.level)));
+			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(nc_right, nets, result.level)));
 			result.operations.push_back(result.precedence[result.level].symbols[0]);
 		}
 	}
