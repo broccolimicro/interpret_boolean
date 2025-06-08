@@ -139,9 +139,56 @@ TEST(Composition, CoverSingleInterference) {
 	
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(output_expr.valid);
+	EXPECT_EQ(output_expr.to_string(), "a~");
+}
 
-	// TODO(edward.bingham) We may want to be able to actively drive interference
-	// as an error case? In which case, this should return "a~" 
-	EXPECT_EQ(output_expr.to_string(), "null");
+TEST(Composition, CoverBasicInterference) {
+	string test_code = "a+,b+,c~, d-, e+ : a+, b- , c- : d- ,e-";
+
+	tokenizer tokens;
+	tokens.register_token<parse::block_comment>(false);
+	tokens.register_token<parse::line_comment>(false);
+	parse_expression::expression::register_syntax(tokens);
+	parse_expression::composition::register_syntax(tokens);
+	parse_expression::assignment::register_syntax(tokens);
+	tokens.insert("CoverBasicInterference", test_code);
+
+	MockNetlist nets;
+	
+	// Import
+	composition input_expr(tokens);
+	boolean::cover dut = boolean::import_cover(input_expr, nets, 0, &tokens, true);
+	
+	// Export
+	composition output_expr = boolean::export_composition(dut, nets);
+	
+	EXPECT_TRUE(tokens.is_clean());
+	EXPECT_TRUE(output_expr.valid);
+	EXPECT_EQ(output_expr.to_string(), "a+,b+,c~,d-,e+:a+,b-,c-:d-,e-");
+}
+
+TEST(Composition, CoverCompoundInterference) {
+	string test_code = "(a+,b+,c~, d-, e+ : a+, b- , c- : d- ,e-),x+";
+
+	tokenizer tokens;
+	tokens.register_token<parse::block_comment>(false);
+	tokens.register_token<parse::line_comment>(false);
+	parse_expression::expression::register_syntax(tokens);
+	parse_expression::composition::register_syntax(tokens);
+	parse_expression::assignment::register_syntax(tokens);
+	tokens.insert("CoverCompoundInterference", test_code);
+
+	MockNetlist nets;
+	
+	// Import
+	composition input_expr(tokens);
+	boolean::cover dut = boolean::import_cover(input_expr, nets, 0, &tokens, true);
+	
+	// Export
+	composition output_expr = boolean::export_composition(dut, nets);
+	
+	EXPECT_TRUE(tokens.is_clean());
+	EXPECT_TRUE(output_expr.valid);
+	EXPECT_EQ(output_expr.to_string(), "x+,a+,b+,c~,d-,e+:x+,a+,b-,c-:x+,d-,e-");
 }
 

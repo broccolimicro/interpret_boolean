@@ -197,13 +197,13 @@ boolean::cube import_cube(const parse_expression::composition &syntax, ucs::Netl
 
 	for (int i = 0; i < (int)syntax.literals.size(); i++) {
 		if (syntax.literals[i].valid) {
-			result &= import_cube(syntax.literals[i], nets, default_id, tokens, auto_define);
+			result = boolean::parallel(result, import_cube(syntax.literals[i], nets, default_id, tokens, auto_define));
 		}
 	}
 
 	for (int i = 0; i < (int)syntax.compositions.size(); i++) {
 		if (syntax.compositions[i].valid) {
-			result &= import_cube(syntax.compositions[i], nets, default_id, tokens, auto_define);
+			result = boolean::parallel(result, import_cube(syntax.compositions[i], nets, default_id, tokens, auto_define));
 		}
 	}
 
@@ -227,24 +227,26 @@ boolean::cover import_cover(const parse_expression::composition &syntax, ucs::Ne
 		return boolean::cover(1);
 	}
 
-	boolean::cover result(syntax.level);
+	boolean::cover result(syntax.precedence[syntax.level] == "," ? 1 : 0);
 
 	for (int i = 0; i < (int)syntax.literals.size(); i++) {
 		if (syntax.literals[i].valid) {
+			boolean::cover sub = import_cube(syntax.literals[i], nets, default_id, tokens, auto_define);
 			if (syntax.precedence[syntax.level] == ":") {
-				result |= import_cube(syntax.literals[i], nets, default_id, tokens, auto_define);
+				result = boolean::choice(result, sub);
 			} else if (syntax.precedence[syntax.level] == ",") {
-				result &= import_cube(syntax.literals[i], nets, default_id, tokens, auto_define);
+				result = boolean::parallel(result, sub);
 			}
 		}
 	}
 
 	for (int i = 0; i < (int)syntax.compositions.size(); i++) {
 		if (syntax.compositions[i].valid) {
+			boolean::cover sub = import_cover(syntax.compositions[i], nets, default_id, tokens, auto_define);
 			if (syntax.precedence[syntax.level] == ":") {
-				result |= import_cover(syntax.compositions[i], nets, default_id, tokens, auto_define);
+				result = boolean::choice(result, sub);
 			} else if (syntax.precedence[syntax.level] == ",") {
-				result &= import_cover(syntax.compositions[i], nets, default_id, tokens, auto_define);
+				result = boolean::parallel(result, sub);
 			}
 		}
 	}
@@ -346,9 +348,10 @@ boolean::cube import_cube(const parse_expression::expression &syntax, ucs::Netli
 				if (tokens != nullptr) {
 					tokens->load(&syntax);
 					tokens->error("unsupported operation", __FILE__, __LINE__);
-				}
-				else
+				} else {
 					error(syntax.to_string(), "unsupported operation", __FILE__, __LINE__);
+				}
+				return boolean::cube();
 			}
 		}
 	}
@@ -395,7 +398,11 @@ boolean::cover import_cover(const parse_expression::expression &syntax, ucs::Net
 					}
 				}
 			}
-			result = sub;
+			if (sub.is_null()) {
+				result = 0;
+			} else {
+				result = sub;
+			}
 		} else if (syntax.isBinary()) {
 			if (syntax.symbol(syntax.operators[i-1]).infix == "|") {
 				result |= sub;
