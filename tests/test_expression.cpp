@@ -11,13 +11,16 @@
 #include <boolean/cover.h>
 #include <interpret_boolean/import.h>
 #include <interpret_boolean/export.h>
-#include "mock_netlist.h"
+#include <common/mock_netlist.h>
+#include "helpers.h"
 
 using namespace std;
 using namespace parse_expression;
 
 TEST(Expression, CubeBasic) {
 	string test_code = "a & b & ~c & ~d & e";
+
+	expression::register_precedence(createPrecedence());
 
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -43,6 +46,8 @@ TEST(Expression, CubeBasic) {
 
 TEST(Expression, CubeMultiple) {
 	string test_code = "a & b & ~c & ~d & e | ~d & ~e";
+	
+	expression::register_precedence(createPrecedence());
 
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -68,6 +73,8 @@ TEST(Expression, CubeMultiple) {
 
 TEST(Expression, CoverBasic) {
 	string test_code = "a & b & ~c & ~d & e | a & ~b & ~c | ~d & ~e";
+	
+	expression::register_precedence(createPrecedence());
 
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -93,6 +100,8 @@ TEST(Expression, CoverBasic) {
 
 TEST(Expression, CoverSingleVariable) {
 	string test_code = "a";
+	
+	expression::register_precedence(createPrecedence());
 
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -118,6 +127,8 @@ TEST(Expression, CoverSingleVariable) {
 
 TEST(Expression, CoverSingleInterference) {
 	string test_code = "?a";
+	
+	expression::register_precedence(createPrecedence());
 
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -146,6 +157,8 @@ TEST(Expression, CoverSingleInterference) {
 
 TEST(Expression, CoverBasicInterference) {
 	string test_code = "a & b & ?c & ~d & e | a & ~b & ~c | ~d & ~e";
+	
+	expression::register_precedence(createPrecedence());
 
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -171,6 +184,8 @@ TEST(Expression, CoverBasicInterference) {
 
 TEST(Expression, CoverCompoundInterference) {
 	string test_code = "(a & b & ?c & ~d & e | a & ~b & ~c | ~d & ~e) & x";
+	
+	expression::register_precedence(createPrecedence());
 
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);

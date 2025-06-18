@@ -3,22 +3,22 @@
 namespace boolean {
 
 parse_expression::expression export_field(string str) {
-	static const pair<int, int> op = parse_expression::expression::find(parse_expression::operation_set::MODIFIER, "", "[", ":", "]");
+	static const auto op = parse_expression::expression::precedence.find(parse_expression::operation_set::MODIFIER, "", "[", ":", "]");
 
 	parse_expression::expression result;
-	if (op.first < 0 or op.second < 0) {
+	if (op.level < 0 or op.index < 0) {
 		return result;
 	}
  
 	result.valid = true;
-	result.level = op.first;
+	result.level = op.level;
 
 	string name = str;
 	
 	size_t open = name.find('[');
 	if (open != string::npos) {
 		name = str.substr(0u, open);
-		result.operators.push_back(op.second);
+		result.operators.push_back(op.index);
 	}
 
 	result.arguments.push_back(parse_expression::argument::literalOf(name));
@@ -33,22 +33,22 @@ parse_expression::expression export_field(string str) {
 }
 
 parse_expression::expression export_member(string str) {
-	static const pair<int, int> op = parse_expression::expression::find(parse_expression::operation_set::BINARY, "", "", ".", "");
+	static const auto op = parse_expression::expression::precedence.find(parse_expression::operation_set::MODIFIER, "", ".", "", "");
 	
 	parse_expression::expression result;
-	if (op.first < 0 or op.second < 0) {
+	if (op.level < 0 or op.index < 0) {
 		return result;
 	}
  
 	result.valid = true;
-	result.level = op.first;
+	result.level = op.level;
 
 	if (not str.empty()) {
 		size_t prev = 0u;
 		size_t dot = str.find('.', prev);
 		while (dot != string::npos and dot < str.size()) {
 			result.arguments.push_back(export_field(str.substr(prev, dot-prev)));
-			result.operators.push_back(op.second);
+			result.operators.push_back(op.index);
 			prev = dot+1;
 			dot = str.find('.', prev);
 		}
@@ -59,21 +59,21 @@ parse_expression::expression export_member(string str) {
 }
 
 parse_expression::expression export_net(string str) {
-	static const pair<int, int> op = parse_expression::expression::find(parse_expression::operation_set::MODIFIER, "", "'", "", "");
+	static const auto op = parse_expression::expression::precedence.find(parse_expression::operation_set::MODIFIER, "", "'", "", "");
 
 	parse_expression::expression result;
-	if (op.first < 0 or op.second < 0) {
+	if (op.level < 0 or op.index < 0) {
 		return result;
 	}
  
 	result.valid = true;
-	result.level = op.first;
+	result.level = op.level;
 
 	size_t tic = str.rfind('\'');
 	if (tic != string::npos) {
 		string region = str.substr(tic+1);
 		str = str.substr(0, tic);
-		result.operators.push_back(op.second);
+		result.operators.push_back(op.index);
 		result.arguments.push_back(export_member(str));
 		result.arguments.push_back(parse_expression::argument::constantOf(region));
 	} else {
@@ -140,30 +140,32 @@ parse_expression::composition export_composition(boolean::cover c, ucs::ConstNet
 }
 
 parse_expression::expression export_expression(int uid, int value, ucs::ConstNetlist nets) {
-	static const pair<int, int> NOT = parse_expression::expression::find(parse_expression::operation_set::UNARY, "~", "", "", "");
-	static const pair<int, int> INV = parse_expression::expression::find(parse_expression::operation_set::UNARY, "?", "", "", "");
+	static const auto NOT = parse_expression::expression::precedence.find(parse_expression::operation_set::UNARY, "~", "", "", "");
+	static const auto INV = parse_expression::expression::precedence.find(parse_expression::operation_set::UNARY, "?", "", "", "");
 
 	parse_expression::expression result;
 	result.valid = true;
 
-	result.level = NOT.first;
+	result.level = NOT.level;
 
 	result.arguments.push_back(parse_expression::argument(export_net(uid, nets)));
 	if (value == 0) {
-		result.operators.push_back(NOT.second);
+		result.level = NOT.level;
+		result.operators.push_back(NOT.index);
 	} else if (value == -1) {
-		result.operators.push_back(INV.second);
+		result.level = INV.level;
+		result.operators.push_back(INV.index);
 	}
 
 	return result;
 }
 
 parse_expression::expression export_expression(boolean::cube c, ucs::ConstNetlist nets) {
-	static const pair<int, int> AND = parse_expression::expression::find(parse_expression::operation_set::BINARY, "", "", "&", "");
+	static const auto AND = parse_expression::expression::precedence.find(parse_expression::operation_set::BINARY, "", "", "&", "");
 	parse_expression::expression result;
 	result.valid = true;
 
-	result.level = AND.first;
+	result.level = AND.level;
 
 	for (int uid = 0; uid < c.size()*16; uid++) {
 		int val = c.get(uid);
@@ -177,18 +179,18 @@ parse_expression::expression export_expression(boolean::cube c, ucs::ConstNetlis
 	}
 
 	for (int i = 1; i < (int)result.arguments.size(); i++) {
-		result.operators.push_back(AND.second);
+		result.operators.push_back(AND.index);
 	}
 
 	return result;
 }
 
 parse_expression::expression export_expression(boolean::cover c, ucs::ConstNetlist nets) {
-	static const pair<int, int> OR = parse_expression::expression::find(parse_expression::operation_set::BINARY, "", "", "|", "");
+	static const auto OR = parse_expression::expression::precedence.find(parse_expression::operation_set::BINARY, "", "", "|", "");
 	parse_expression::expression result;
 	result.valid = true;
 
-	result.level = OR.first;
+	result.level = OR.level;
 
 	for (int i = 0; i < (int)c.cubes.size(); i++) {
 		result.arguments.push_back(parse_expression::argument(export_expression(c.cubes[i], nets)));
@@ -199,18 +201,18 @@ parse_expression::expression export_expression(boolean::cover c, ucs::ConstNetli
 	}
 
 	for (int i = 1; i < (int)result.arguments.size(); i++) {
-		result.operators.push_back(OR.second);
+		result.operators.push_back(OR.index);
 	}
 
 	return result;
 }
 
 parse_expression::expression export_expression_xfactor(boolean::cover c, ucs::ConstNetlist nets, int level) {
-	static const pair<int, int> AND = parse_expression::expression::find(parse_expression::operation_set::BINARY, "", "", "&", "");
-	static const pair<int, int> OR = parse_expression::expression::find(parse_expression::operation_set::BINARY, "", "", "|", "");
+	static const auto AND = parse_expression::expression::precedence.find(parse_expression::operation_set::BINARY, "", "", "&", "");
+	static const auto OR = parse_expression::expression::precedence.find(parse_expression::operation_set::BINARY, "", "", "|", "");
 
 	parse_expression::expression result;
-	result.level = level < 0 ? OR.first : level;
+	result.level = level < 0 ? OR.level : level;
 	result.valid = true;
 
 	boolean::cover nc = ~c;
@@ -220,16 +222,16 @@ parse_expression::expression export_expression_xfactor(boolean::cover c, ucs::Co
 	} else if (nc.cubes.size() == 0) {
 		result.arguments.push_back(parse_expression::argument::constantOf("1"));
 	} else if (c.cubes.size() == 1 || nc.cubes.size() == 1) {
-		if (level == AND.first) {
+		if (level == AND.level) {
 			c = nc;
-			result.level = OR.first;
+			result.level = OR.level;
 		}
 
 		for (int i = 0; i < (int)c.cubes.size(); i++) {
 			result.arguments.push_back(parse_expression::argument(export_expression(c.cubes[i], nets)));
 		}
 		for (int i = 1; i < (int)result.arguments.size(); i++) {
-			result.operators.push_back(result.level == AND.first ? AND.second : OR.second);
+			result.operators.push_back(result.level == AND.level ? AND.index : OR.index);
 		}
 	} else {
 		boolean::cover c_left, c_right, nc_left, nc_right;
@@ -241,12 +243,12 @@ parse_expression::expression export_expression_xfactor(boolean::cover c, ucs::Co
 		if (c_weight <= nc_weight) {
 			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(c_left, nets, result.level)));
 			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(c_right, nets, result.level)));
-			result.operators.push_back(result.level == AND.first ? AND.second : OR.second);
+			result.operators.push_back(result.level == AND.level ? AND.index : OR.index);
 		} else if (nc_weight < c_weight) {
-			result.level = result.level == AND.first ? OR.first : AND.first;
+			result.level = result.level == AND.level ? OR.level : AND.level;
 			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(nc_left, nets, result.level)));
 			result.arguments.push_back(parse_expression::argument(export_expression_xfactor(nc_right, nets, result.level)));
-			result.operators.push_back(result.level == AND.first ? AND.second : OR.second);
+			result.operators.push_back(result.level == AND.level ? AND.index : OR.index);
 		}
 	}
 
@@ -264,12 +266,12 @@ parse_expression::expression export_expression_xfactor(boolean::cover c, ucs::Co
 }
 
 parse_expression::expression export_expression_hfactor(boolean::cover c, ucs::ConstNetlist nets) {
-	static const pair<int, int> AND = parse_expression::expression::find(parse_expression::operation_set::BINARY, "", "", "&", "");
-	static const pair<int, int> OR = parse_expression::expression::find(parse_expression::operation_set::BINARY, "", "", "|", "");
+	static const auto AND = parse_expression::expression::precedence.find(parse_expression::operation_set::BINARY, "", "", "&", "");
+	static const auto OR = parse_expression::expression::precedence.find(parse_expression::operation_set::BINARY, "", "", "|", "");
 
 	parse_expression::expression result;
 	result.valid = true;
-	result.level = OR.first;
+	result.level = OR.level;
 
 	if (c.is_null()) {
 		result.arguments.push_back(parse_expression::argument::constantOf("0"));
@@ -285,14 +287,14 @@ parse_expression::expression export_expression_hfactor(boolean::cover c, ucs::Co
 
 			result.arguments.push_back(parse_expression::argument(export_expression_hfactor(c_left, nets)));
 			result.arguments.push_back(parse_expression::argument(export_expression_hfactor(c_right, nets)));
-			result.operators.push_back(OR.second);
+			result.operators.push_back(OR.index);
 		} else {
 			c.cofactor(common);
 
 			result.arguments.push_back(parse_expression::argument(export_expression(common, nets)));
 			result.arguments.push_back(parse_expression::argument(export_expression_hfactor(c, nets)));
-			result.operators.push_back(AND.second);
-			result.level = AND.first;
+			result.operators.push_back(AND.index);
+			result.level = AND.level;
 		}
 	}
 

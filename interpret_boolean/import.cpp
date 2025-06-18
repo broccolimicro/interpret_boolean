@@ -63,21 +63,21 @@ string import_net_name(const parse_expression::expression &syntax, tokenizer *to
 	string result = "";
 	if (syntax.operators.empty()) {
 		result += import_net_name(syntax.arguments[0], tokens);
-	} else if (syntax.precedence[syntax.level].type == parse_expression::operation_set::MODIFIER
-		and syntax.symbol(syntax.operators[0]).trigger == "[") {
-		result += import_net_name(syntax.arguments[0], tokens) + syntax.symbol(syntax.operators[0]).trigger;
+	} else if (syntax.precedence.isModifier(syntax.level)
+		and syntax.precedence.at(syntax.level, syntax.operators[0]).trigger == "[") {
+		result += import_net_name(syntax.arguments[0], tokens) + syntax.precedence.at(syntax.level, syntax.operators[0]).trigger;
 		for (int i = 1; i < (int)syntax.arguments.size(); i++) {
 			if (i != 1) {
-				result += syntax.symbol(syntax.operators[0]).infix;
+				result += syntax.precedence.at(syntax.level, syntax.operators[0]).infix;
 			}
 			result += import_constant(syntax.arguments[i], tokens);
 		}
-		result += syntax.symbol(syntax.operators[0]).postfix;
-	} else if (syntax.precedence[syntax.level].type == parse_expression::operation_set::BINARY
-		and syntax.symbol(syntax.operators[0]).infix == ".") {
+		result += syntax.precedence.at(syntax.level, syntax.operators[0]).postfix;
+	} else if (syntax.precedence.isBinary(syntax.level)
+		and syntax.precedence.at(syntax.level, syntax.operators[0]).infix == ".") {
 		for (int i = 0; i < (int)syntax.arguments.size(); i++) {
 			if (i != 0) {
-				result += syntax.symbol(syntax.operators[i]).infix;
+				result += syntax.precedence.at(syntax.level, syntax.operators[i]).infix;
 			}
 			result += import_net_name(syntax.arguments[i], tokens);
 		}
@@ -307,7 +307,7 @@ boolean::cube import_cube(const parse_expression::expression &syntax, ucs::Netli
 	}
 
 	boolean::cover result;
-	if (syntax.isModifier() and not syntax.operators.empty() and syntax.symbol(0).trigger == "'") {
+	if (syntax.precedence.isModifier(syntax.level) and not syntax.operators.empty() and syntax.precedence.at(syntax.level, 0).trigger == "'") {
 		default_id = atoi(import_constant(syntax.arguments[1], tokens).c_str());
 		result = import_argument(syntax, syntax.arguments[0], false, nets, default_id, tokens, auto_define);
 	} else {
@@ -318,14 +318,14 @@ boolean::cube import_cube(const parse_expression::expression &syntax, ucs::Netli
 			// interpret the operators
 			bool err = false;
 			if (i == 0) {
-				if (syntax.isUnary()) {
+				if (syntax.precedence.isUnary(syntax.level)) {
 					for (int j = (int)syntax.operators.size()-1; j >= 0; j--) {
-						if (syntax.symbol(syntax.operators[j]).prefix == "~") {
+						if (syntax.precedence.at(syntax.level, syntax.operators[j]).prefix == "~") {
 							sub = ~sub;
 							if (sub.cubes.size() > 1) {
 								err = true;
 							}
-						} else if (syntax.symbol(syntax.operators[j]).prefix == "?") {
+						} else if (syntax.precedence.at(syntax.level, syntax.operators[j]).prefix == "?") {
 							sub = sub.nulled();
 							if (sub.cubes.size() > 1) {
 								err = true;
@@ -337,7 +337,7 @@ boolean::cube import_cube(const parse_expression::expression &syntax, ucs::Netli
 				}
 
 				result = sub;
-			} else if (syntax.isBinary() and syntax.symbol(syntax.operators[i-1]).infix == "&") {
+			} else if (syntax.precedence.isBinary(syntax.level) and syntax.precedence.at(syntax.level, syntax.operators[i-1]).infix == "&") {
 				result &= sub;
 			} else if (not syntax.operators.empty()) {
  
@@ -374,7 +374,7 @@ boolean::cover import_cover(const parse_expression::expression &syntax, ucs::Net
 		return boolean::cover(0);
 	}
 
-	if (syntax.isModifier() and not syntax.operators.empty() and syntax.symbol(0).trigger == "'") {
+	if (syntax.precedence.isModifier(syntax.level) and not syntax.operators.empty() and syntax.precedence.at(syntax.level, 0).trigger == "'") {
 		default_id = atoi(import_constant(syntax.arguments[1], tokens).c_str());
 		return import_argument(syntax, syntax.arguments[0], true, nets, default_id, tokens, auto_define);
 	}
@@ -387,11 +387,11 @@ boolean::cover import_cover(const parse_expression::expression &syntax, ucs::Net
 		// interpret the operators
 		bool err = false;
 		if (i == 0) {
-			if (syntax.isUnary()) {
+			if (syntax.precedence.isUnary(syntax.level)) {
 				for (int j = (int)syntax.operators.size()-1; j >= 0; j--) {
-					if (syntax.symbol(syntax.operators[j]).prefix == "~") {
+					if (syntax.precedence.at(syntax.level, syntax.operators[j]).prefix == "~") {
 						sub = ~sub;
-					} else if (syntax.symbol(syntax.operators[j]).prefix == "?") {
+					} else if (syntax.precedence.at(syntax.level, syntax.operators[j]).prefix == "?") {
 						sub = sub.nulled();
 					} else {
 						err = true;
@@ -403,10 +403,10 @@ boolean::cover import_cover(const parse_expression::expression &syntax, ucs::Net
 			} else {
 				result = sub;
 			}
-		} else if (syntax.isBinary()) {
-			if (syntax.symbol(syntax.operators[i-1]).infix == "|") {
+		} else if (syntax.precedence.isBinary(syntax.level)) {
+			if (syntax.precedence.at(syntax.level, syntax.operators[i-1]).infix == "|") {
 				result |= sub;
-			} else if (syntax.symbol(syntax.operators[i-1]).infix == "&") {
+			} else if (syntax.precedence.at(syntax.level, syntax.operators[i-1]).infix == "&") {
 				result &= sub;
 			} else {
 				err = true;
@@ -440,7 +440,7 @@ boolean::unsigned_int import_unsigned_int(const parse_expression::expression &sy
 	}
 
 	boolean::unsigned_int result;
-	if (syntax.isModifier() and not syntax.operators.empty() and syntax.symbol(0).trigger == "'") {
+	if (syntax.precedence.isModifier(syntax.level) and not syntax.operators.empty() and syntax.precedence.at(syntax.level, 0).trigger == "'") {
 		default_id = atoi(import_constant(syntax.arguments[1], tokens).c_str());
 		// interpret the operands
 		boolean::unsigned_int sub;
@@ -507,12 +507,12 @@ boolean::unsigned_int import_unsigned_int(const parse_expression::expression &sy
 			// interpret the operators
 			bool err = false;
 			if (i == 0) {
-				if (syntax.isUnary()) {
+				if (syntax.precedence.isUnary(syntax.level)) {
 					for (int j = (int)syntax.operators.size()-1; j >= 0; j--) {
-						if (syntax.symbol(j).prefix == "~") {
+						if (syntax.precedence.at(syntax.level, j).prefix == "~") {
 							sub = ~sub;
-						} else if (syntax.symbol(j).prefix == "+") {
-						//} else if (syntax.symbol(j).prefix == "-") {
+						} else if (syntax.precedence.at(syntax.level, j).prefix == "+") {
+						//} else if (syntax.precedence.at(syntax.level, j).prefix == "-") {
 						//	sub = -sub;
 						} else {
 							err = true;
@@ -521,38 +521,38 @@ boolean::unsigned_int import_unsigned_int(const parse_expression::expression &sy
 				}
 
 				result = sub;
-			} else if (syntax.isBinary()) {
-				if (syntax.symbol(i-1).infix == "|") {
+			} else if (syntax.precedence.isBinary(syntax.level)) {
+				if (syntax.precedence.at(syntax.level, i-1).infix == "|") {
 					result |= sub;
-				} else if (syntax.symbol(i-1).infix == "&") {
+				} else if (syntax.precedence.at(syntax.level, i-1).infix == "&") {
 					result &= sub;
-				} else if (syntax.symbol(i-1).infix == "^") {
+				} else if (syntax.precedence.at(syntax.level, i-1).infix == "^") {
 					result ^= sub;
-				} else if (syntax.symbol(i-1).infix == "==") {
+				} else if (syntax.precedence.at(syntax.level, i-1).infix == "==") {
 					result = boolean::unsigned_int(boolean::bitset(result == sub));
-				} else if (syntax.symbol(i-1).infix == "~=") {
+				} else if (syntax.precedence.at(syntax.level, i-1).infix == "~=") {
 					result = boolean::unsigned_int(boolean::bitset(result != sub));
-				} else if (syntax.symbol(i-1).infix == "<") {
+				} else if (syntax.precedence.at(syntax.level, i-1).infix == "<") {
 					result = boolean::unsigned_int(boolean::bitset(result < sub));
-				} else if (syntax.symbol(i-1).infix == ">") {
+				} else if (syntax.precedence.at(syntax.level, i-1).infix == ">") {
 					result = boolean::unsigned_int(boolean::bitset(result > sub));
-				} else if (syntax.symbol(i-1).infix == "<=") {
+				} else if (syntax.precedence.at(syntax.level, i-1).infix == "<=") {
 					result = boolean::unsigned_int(boolean::bitset(result <= sub));
-				} else if (syntax.symbol(i-1).infix == ">=") {
+				} else if (syntax.precedence.at(syntax.level, i-1).infix == ">=") {
 					result = boolean::unsigned_int(boolean::bitset(result >= sub));
-				//} else if (syntax.symbol(i-1).infix == "<<") {
+				//} else if (syntax.precedence.at(syntax.level, i-1).infix == "<<") {
 				//	result <<= sub;
-				//} else if (syntax.symbol(i-1).infix == ">>") {
+				//} else if (syntax.precedence.at(syntax.level, i-1).infix == ">>") {
 				//	result >>= sub;
-				} else if (syntax.symbol(i-1).infix == "+") {
+				} else if (syntax.precedence.at(syntax.level, i-1).infix == "+") {
 					result += sub;
-				} else if (syntax.symbol(i-1).infix == "-") {
+				} else if (syntax.precedence.at(syntax.level, i-1).infix == "-") {
 					result -= sub;
-				} else if (syntax.symbol(i-1).infix == "*") {
+				} else if (syntax.precedence.at(syntax.level, i-1).infix == "*") {
 					result *= sub;
-				} else if (syntax.symbol(i-1).infix == "/") {
+				} else if (syntax.precedence.at(syntax.level, i-1).infix == "/") {
 					result /= sub;
-				//} else if (syntax.symbol(i-1).infix == "%") {
+				//} else if (syntax.precedence.at(syntax.level, i-1).infix == "%") {
 				//	result %= sub;
 				} else {
 					err = true;
