@@ -44,7 +44,7 @@ TEST(Composition, CubeBasic) {
 	EXPECT_EQ(output_expr.to_string(), "a+,b+,c-,d-,e+");
 }
 
-TEST(Composition, CubeMultiple) {
+TEST(Composition, CubeDisjunction) {
 	string test_code = "a+, b+ , c- , d- , e+ : a-,b-";
 	
 	expression::register_precedence(createPrecedence());
