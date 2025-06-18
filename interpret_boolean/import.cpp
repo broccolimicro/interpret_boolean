@@ -73,11 +73,11 @@ string import_net_name(const parse_expression::expression &syntax, tokenizer *to
 			result += import_constant(syntax.arguments[i], tokens);
 		}
 		result += syntax.precedence.at(syntax.level, syntax.operators[0]).postfix;
-	} else if (syntax.precedence.isBinary(syntax.level)
-		and syntax.precedence.at(syntax.level, syntax.operators[0]).infix == ".") {
+	} else if (syntax.precedence.isModifier(syntax.level)
+		and syntax.precedence.at(syntax.level, syntax.operators[0]).trigger == ".") {
 		for (int i = 0; i < (int)syntax.arguments.size(); i++) {
 			if (i != 0) {
-				result += syntax.precedence.at(syntax.level, syntax.operators[i]).infix;
+				result += syntax.precedence.at(syntax.level, syntax.operators[0]).trigger;
 			}
 			result += import_net_name(syntax.arguments[i], tokens);
 		}
