@@ -64,6 +64,10 @@ string import_net_name(const parse_expression::expression &syntax, tokenizer *to
 	if (syntax.operators.empty()) {
 		result += import_net_name(syntax.arguments[0], tokens);
 	} else if (syntax.precedence.isModifier(syntax.level)
+		and syntax.precedence.at(syntax.level, syntax.operators[0]).trigger == "'") {
+		string cnst = import_constant(syntax.arguments[1], tokens);
+		result += import_net_name(syntax.arguments[0], tokens) + syntax.precedence.at(syntax.level, syntax.operators[0]).trigger + cnst;
+	} else if (syntax.precedence.isModifier(syntax.level)
 		and syntax.precedence.at(syntax.level, syntax.operators[0]).trigger == "[") {
 		result += import_net_name(syntax.arguments[0], tokens) + syntax.precedence.at(syntax.level, syntax.operators[0]).trigger;
 		for (int i = 1; i < (int)syntax.arguments.size(); i++) {
