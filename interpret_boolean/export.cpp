@@ -109,7 +109,9 @@ parse_expression::assignment export_assignment(int uid, int value, ucs::ConstNet
 }
 
 parse_expression::composition export_composition(boolean::cube c, ucs::ConstNetlist nets) {
+	parse_expression::composition::init();
 	static const int level = parse_expression::composition::get_level(",");
+
 	parse_expression::composition result;
 	result.valid = true;
 
@@ -126,7 +128,9 @@ parse_expression::composition export_composition(boolean::cube c, ucs::ConstNetl
 }
 
 parse_expression::composition export_composition(boolean::cover c, ucs::ConstNetlist nets) {
+	parse_expression::composition::init();
 	static const int level = parse_expression::composition::get_level(":");
+
 	parse_expression::composition result;
 	result.valid = true;
 
