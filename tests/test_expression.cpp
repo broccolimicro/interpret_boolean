@@ -15,19 +15,17 @@
 #include "helpers.h"
 
 using namespace std;
-using namespace parse_expression;
 
 TEST(Expression, CubeBasic) {
 	string test_code = "a & b & ~c & ~d & e";
 
-	expression::register_precedence(createPrecedence());
-
 	tokenizer tokens;
+	setup_expressions();
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
-	parse_expression::expression::register_syntax(tokens);
-	parse_expression::composition::register_syntax(tokens);
-	parse_expression::assignment::register_syntax(tokens);
+	expression::register_syntax(tokens);
+	composition::register_syntax(tokens);
+	assignment::register_syntax(tokens);
 	tokens.insert("CubeBasic", test_code);
 
 	MockNetlist nets;
@@ -37,7 +35,7 @@ TEST(Expression, CubeBasic) {
 	boolean::cube dut = boolean::import_cube(input_expr, nets, 0, &tokens, true);
 	
 	// Export
-	expression output_expr = boolean::export_expression(dut, nets);
+	expression output_expr = boolean::export_expression<expression>(dut, nets);
 	
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(output_expr.valid);
@@ -47,14 +45,13 @@ TEST(Expression, CubeBasic) {
 TEST(Expression, CubeMultiple) {
 	string test_code = "a & b & ~c & ~d & e | ~d & ~e";
 	
-	expression::register_precedence(createPrecedence());
-
 	tokenizer tokens;
+	setup_expressions();
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
-	parse_expression::expression::register_syntax(tokens);
-	parse_expression::expression::register_syntax(tokens);
-	parse_expression::assignment::register_syntax(tokens);
+	expression::register_syntax(tokens);
+	expression::register_syntax(tokens);
+	assignment::register_syntax(tokens);
 	tokens.insert("CubeMultiple", test_code);
 
 	MockNetlist nets;
@@ -64,7 +61,7 @@ TEST(Expression, CubeMultiple) {
 	boolean::cube dut = boolean::import_cube(input_comp, nets, 0, &tokens, true);
 	
 	// Export
-	expression output_expr = boolean::export_expression(dut, nets);
+	expression output_expr = boolean::export_expression<expression>(dut, nets);
 	
 	EXPECT_FALSE(tokens.is_clean());
 	EXPECT_TRUE(output_expr.valid);
@@ -74,14 +71,13 @@ TEST(Expression, CubeMultiple) {
 TEST(Expression, CoverBasic) {
 	string test_code = "a & b & ~c & ~d & e | a & ~b & ~c | ~d & ~e";
 	
-	expression::register_precedence(createPrecedence());
-
 	tokenizer tokens;
+	setup_expressions();
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
-	parse_expression::expression::register_syntax(tokens);
-	parse_expression::composition::register_syntax(tokens);
-	parse_expression::assignment::register_syntax(tokens);
+	expression::register_syntax(tokens);
+	composition::register_syntax(tokens);
+	assignment::register_syntax(tokens);
 	tokens.insert("CoverBasic", test_code);
 
 	MockNetlist nets;
@@ -91,7 +87,7 @@ TEST(Expression, CoverBasic) {
 	boolean::cover dut = boolean::import_cover(input_expr, nets, 0, &tokens, true);
 	
 	// Export
-	expression output_expr = boolean::export_expression(dut, nets);
+	expression output_expr = boolean::export_expression<expression>(dut, nets);
 	
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(output_expr.valid);
@@ -101,14 +97,13 @@ TEST(Expression, CoverBasic) {
 TEST(Expression, CoverSingleVariable) {
 	string test_code = "a";
 	
-	expression::register_precedence(createPrecedence());
-
 	tokenizer tokens;
+	setup_expressions();
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
-	parse_expression::expression::register_syntax(tokens);
-	parse_expression::expression::register_syntax(tokens);
-	parse_expression::assignment::register_syntax(tokens);
+	expression::register_syntax(tokens);
+	expression::register_syntax(tokens);
+	assignment::register_syntax(tokens);
 	tokens.insert("CoverSingleVariable", test_code);
 
 	MockNetlist nets;
@@ -118,7 +113,7 @@ TEST(Expression, CoverSingleVariable) {
 	boolean::cover dut = boolean::import_cover(input_expr, nets, 0, &tokens, true);
 	
 	// Export
-	expression output_expr = boolean::export_expression(dut, nets);
+	expression output_expr = boolean::export_expression<expression>(dut, nets);
 	
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(output_expr.valid);
@@ -128,14 +123,13 @@ TEST(Expression, CoverSingleVariable) {
 TEST(Expression, CoverSingleInterference) {
 	string test_code = "?a";
 	
-	expression::register_precedence(createPrecedence());
-
 	tokenizer tokens;
+	setup_expressions();
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
-	parse_expression::expression::register_syntax(tokens);
-	parse_expression::expression::register_syntax(tokens);
-	parse_expression::assignment::register_syntax(tokens);
+	expression::register_syntax(tokens);
+	expression::register_syntax(tokens);
+	assignment::register_syntax(tokens);
 	tokens.insert("CoverSingleInterference", test_code);
 
 	MockNetlist nets;
@@ -145,7 +139,7 @@ TEST(Expression, CoverSingleInterference) {
 	boolean::cover dut = boolean::import_cover(input_expr, nets, 0, &tokens, true);
 
 	// Export
-	expression output_expr = boolean::export_expression(dut, nets);
+	expression output_expr = boolean::export_expression<expression>(dut, nets);
 	
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(output_expr.valid);
@@ -158,14 +152,13 @@ TEST(Expression, CoverSingleInterference) {
 TEST(Expression, CoverBasicInterference) {
 	string test_code = "a & b & ?c & ~d & e | a & ~b & ~c | ~d & ~e";
 	
-	expression::register_precedence(createPrecedence());
-
 	tokenizer tokens;
+	setup_expressions();
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
-	parse_expression::expression::register_syntax(tokens);
-	parse_expression::composition::register_syntax(tokens);
-	parse_expression::assignment::register_syntax(tokens);
+	expression::register_syntax(tokens);
+	composition::register_syntax(tokens);
+	assignment::register_syntax(tokens);
 	tokens.insert("CoverBasicInterference", test_code);
 
 	MockNetlist nets;
@@ -175,7 +168,7 @@ TEST(Expression, CoverBasicInterference) {
 	boolean::cover dut = boolean::import_cover(input_expr, nets, 0, &tokens, true);
 	
 	// Export
-	expression output_expr = boolean::export_expression(dut, nets);
+	expression output_expr = boolean::export_expression<expression>(dut, nets);
 	
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(output_expr.valid);
@@ -185,14 +178,13 @@ TEST(Expression, CoverBasicInterference) {
 TEST(Expression, CoverCompoundInterference) {
 	string test_code = "(a & b & ?c & ~d & e | a & ~b & ~c | ~d & ~e) & x";
 	
-	expression::register_precedence(createPrecedence());
-
 	tokenizer tokens;
+	setup_expressions();
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
-	parse_expression::expression::register_syntax(tokens);
-	parse_expression::composition::register_syntax(tokens);
-	parse_expression::assignment::register_syntax(tokens);
+	expression::register_syntax(tokens);
+	composition::register_syntax(tokens);
+	assignment::register_syntax(tokens);
 	tokens.insert("CoverCompoundInterference", test_code);
 
 	MockNetlist nets;
@@ -202,7 +194,7 @@ TEST(Expression, CoverCompoundInterference) {
 	boolean::cover dut = boolean::import_cover(input_expr, nets, 0, &tokens, true);
 	
 	// Export
-	expression output_expr = boolean::export_expression(dut, nets);
+	expression output_expr = boolean::export_expression<expression>(dut, nets);
 	
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(output_expr.valid);

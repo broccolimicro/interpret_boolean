@@ -1,77 +1,34 @@
 #include "helpers.h"
+#include <parse_expression/precedence.h>
 
-precedence_set createPrecedence() {
-	precedence_set result;
-	result.push(operation_set::GROUP);
-	result.push_back("[", "", ",", "]");
+using parse_expression::precedence_set;
+using parse_expression::operation_set;
 
-	result.push(operation_set::TERNARY);
-	result.push_back("", "@", ":", "");
+void setup_expressions() {
+	if (expression::precedence.empty()) {
+		precedence_set result;
+		result.push(operation_set::BINARY);
+		result.push_back("", "", "|", "");
 
-	result.push(operation_set::BINARY);
-	result.push_back("", "", "|", "");
+		result.push(operation_set::BINARY);
+		result.push_back("", "", "&", "");
 
-	result.push(operation_set::BINARY);
-	result.push_back("", "", "&", "");
+		result.push(operation_set::UNARY);
+		result.push_back("~", "", "", "");
+		result.push_back("?", "", "", "");
 
-	result.push(operation_set::BINARY);
-	result.push_back("", "", "^", "");
+		result.push(operation_set::MODIFIER);
+		result.push_back("", "'", "", "");
 
-	result.push(operation_set::BINARY);
-	result.push_back("", "", "==", "");
-	result.push_back("", "", "~=", "");
-	result.push_back("", "", "<", "");
-	result.push_back("", "", ">", "");
-	result.push_back("", "", "<=", "");
-	result.push_back("", "", ">=", "");
+		result.push(operation_set::MODIFIER);
+		result.push_back("", "(", ",", ")");
+		result.push_back("", ".", "", "");
+		result.push_back("", "[", ":", "]");
 
-	result.push(operation_set::BINARY);
-	result.push_back("", "", "||", "");
-	
-	result.push(operation_set::BINARY);
-	result.push_back("", "", "&&", "");
-
-	result.push(operation_set::BINARY);
-	result.push_back("", "", "^^", "");
-
-	result.push(operation_set::BINARY);
-	result.push_back("", "", "<<", "");
-	result.push_back("", "", ">>", "");
-
-	result.push(operation_set::BINARY);
-	result.push_back("", "", "+", "");
-	result.push_back("", "", "-", "");
-
-	result.push(operation_set::BINARY);
-	result.push_back("", "", "*", "");
-	result.push_back("", "", "/", "");
-	result.push_back("", "", "%", "");
-
-	result.push(operation_set::UNARY);
-	result.push_back("!", "", "", "");
-	result.push_back("~", "", "", "");
-	result.push_back("(bool)", "", "", "");
-	result.push_back("+", "", "", "");
-	result.push_back("-", "", "", "");
-	result.push_back("?", "", "", "");
-
-	result.push(operation_set::MODIFIER);
-	result.push_back("", "!", "", "");
-
-	result.push(operation_set::UNARY);
-	result.push_back("#", "", "", "");
-	result.push_back("", "", "", "?");
-
-	result.push(operation_set::MODIFIER);
-	result.push_back("", "'", "", "");
-
-	result.push(operation_set::MODIFIER);
-	result.push_back("", "(", ",", ")");
-	result.push_back("", ".", "", "");
-	result.push_back("", "[", ":", "]");
-
-	result.push(operation_set::MODIFIER);
-	result.push_back("", "::", "", "");
-	return result;
+		result.push(operation_set::MODIFIER);
+		result.push_back("", "::", "", "");
+		
+		expression::register_precedence(result);
+		assignment::lvalueLevel = result.size()-3;
+	}
 }
-
