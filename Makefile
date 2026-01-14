@@ -1,6 +1,6 @@
 NAME          = interpret_boolean
-DEPEND        = boolean parse_expression parse_ucs parse common
-TEST_DEPEND   = boolean parse_expression parse_ucs parse common
+DEPEND        = boolean parse_expression parse common
+TEST_DEPEND   = boolean parse_expression parse common
 
 COVERAGE ?= 0
 
