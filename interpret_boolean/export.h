@@ -47,6 +47,11 @@ expression export_field(string str) {
 
 	expression result;
 	if (op.level < 0 or op.index < 0) {
+		if (expression::precedence.empty()) {
+			error("", "operator precedence not defined", __FILE__, __LINE__);
+		}
+		result.valid = true;
+		result.arguments.push_back(expression::argument::literalOf(str));
 		return result;
 	}
  
@@ -78,6 +83,11 @@ expression export_member(string str) {
 	
 	expression result;
 	if (op.level < 0 or op.index < 0) {
+		if (expression::precedence.empty()) {
+			error("", "operator precedence not defined", __FILE__, __LINE__);
+		}
+		result.valid = true;
+		result.arguments.push_back(export_field<expression>(str));
 		return result;
 	}
  
@@ -105,6 +115,11 @@ expression export_net(string str) {
 
 	expression result;
 	if (op.level < 0 or op.index < 0) {
+		if (expression::precedence.empty()) {
+			error("", "operator precedence not defined", __FILE__, __LINE__);
+		}
+		result.valid = true;
+		result.arguments.push_back(export_member<expression>(str));
 		return result;
 	}
  
