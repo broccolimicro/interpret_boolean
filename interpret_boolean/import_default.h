@@ -7,7 +7,6 @@
 #include <boolean/cover.h>
 #include <boolean/unsigned_int.h>
 
-#include <parse_expression/composition.h>
 #include <parse_expression/expression.h>
 
 namespace boolean {
@@ -17,148 +16,10 @@ namespace boolean {
 // trees without arithmetic operations or more complex types. That
 // transformation should happen outside of this code.
 
-template <int group, typename number_t, typename instance_t>
-string import_constant(const parse_expression::expression_t<group, number_t, instance_t> &syntax, tokenizer *tokens);
-template <int group, typename number_t, typename instance_t>
-string import_constant(const parse_expression::argument_t<group, number_t, instance_t> &syntax, tokenizer *tokens);
-template <int group, typename number_t, typename instance_t>
-string import_net_name(const parse_expression::argument_t<group, number_t, instance_t> &syntax, tokenizer *tokens);
-template <int group, typename number_t, typename instance_t>
-string import_net_name(const parse_expression::expression_t<group, number_t, instance_t> &syntax, tokenizer *tokens);
-
 int import_net(string syntax, ucs::Netlist nets, tokenizer *tokens, bool auto_define);
-template <int group, typename number_t, typename instance_t>
-int import_net(const parse_expression::expression_t<group, number_t, instance_t> &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define);
 
-template <int group, typename number_t, typename instance_t>
-boolean::cube import_cube(const parse_expression::assignment_t<group, number_t, instance_t> &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define = false);
-template <int group, typename number_t, typename instance_t>
-boolean::cover import_cover(const parse_expression::assignment_t<group, number_t, instance_t> &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define = false);
 
-template <int group, typename number_t, typename instance_t>
-boolean::cube import_cube(const parse_expression::composition_t<group, number_t, instance_t> &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define = false);
-template <int group, typename number_t, typename instance_t>
-boolean::cover import_cover(const parse_expression::composition_t<group, number_t, instance_t> &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define = false);
-
-template <int group, typename number_t, typename instance_t>
-boolean::cube import_cube(const parse_expression::expression_t<group, number_t, instance_t> &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define = false);
-template <int group, typename number_t, typename instance_t>
-boolean::cover import_cover(const parse_expression::expression_t<group, number_t, instance_t> &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define = false);
-
-template <int group, typename number_t, typename instance_t>
-boolean::unsigned_int import_unsigned_int(const parse_expression::expression_t<group, number_t, instance_t> &syntax, map<string, boolean::unsigned_int> &variables, int default_id, tokenizer *tokens);
-
-template <int group, typename number_t, typename instance_t>
-string import_constant(const parse_expression::expression_t<group, number_t, instance_t> &syntax, tokenizer *tokens) {
-	if (not syntax.valid or syntax.level < 0 or syntax.arguments.empty()) {
-		if (tokens != nullptr) {
-			tokens->load(&syntax);
-			tokens->internal("invalid expression", __FILE__, __LINE__);
-		} else {
-			internal("", "invaid expression", __FILE__, __LINE__);
-		}
-		return "0";
-	}
-
-	string result = "";
-	if (syntax.operators.empty()) {
-		result += import_constant(syntax.arguments[0], tokens);
-	} else {
-		if (tokens != nullptr) {
-			tokens->load(&syntax);
-			tokens->internal("sub expressions in constants not supported", __FILE__, __LINE__);
-		} else {
-			internal("", "sub expressions in constants not supported", __FILE__, __LINE__);
-		}
-		return "0";
-	}
-
-	return result;
-}
-
-template <int group, typename number_t, typename instance_t>
-string import_constant(const parse_expression::argument_t<group, number_t, instance_t> &syntax, tokenizer *tokens) {
-	if (syntax.sub.valid) {
-		return import_constant(syntax.sub, tokens);
-	} else if (not syntax.literal.empty()) {
-		internal(syntax.literal, "expected constant-valued expression", __FILE__, __LINE__);
-		return "0";
-	}
-	return syntax.constant;
-}
-
-template <int group, typename number_t, typename instance_t>
-string import_net_name(const parse_expression::argument_t<group, number_t, instance_t> &syntax, tokenizer *tokens) {
-	if (syntax.sub.valid) {
-		return import_net_name(syntax.sub, tokens);
-	} else if (not syntax.literal.empty()) {
-		return syntax.literal;
-	}
-	internal(syntax.constant, "expected instance", __FILE__, __LINE__);
-	return "_";
-}
-
-template <int group, typename number_t, typename instance_t>
-string import_net_name(const parse_expression::expression_t<group, number_t, instance_t> &syntax, tokenizer *tokens) {
-	if (not syntax.valid or syntax.level < 0 or syntax.arguments.empty()) {
-		if (tokens != nullptr) {
-			tokens->load(&syntax);
-			tokens->internal("invalid expression", __FILE__, __LINE__);
-		} else {
-			internal("", "invaid expression", __FILE__, __LINE__);
-		}
-		return "_";
-	}
-
-	string result = "";
-	if (syntax.operators.empty()) {
-		result += import_net_name(syntax.arguments[0], tokens);
-	} else if (syntax.precedence.isModifier(syntax.level)
-		and syntax.precedence.at(syntax.level, syntax.operators[0]).trigger == "'") {
-		string cnst = import_constant(syntax.arguments[1], tokens);
-		result += import_net_name(syntax.arguments[0], tokens) + syntax.precedence.at(syntax.level, syntax.operators[0]).trigger + cnst;
-	} else if (syntax.precedence.isModifier(syntax.level)
-		and syntax.precedence.at(syntax.level, syntax.operators[0]).trigger == "[") {
-		result += import_net_name(syntax.arguments[0], tokens) + syntax.precedence.at(syntax.level, syntax.operators[0]).trigger;
-		for (int i = 1; i < (int)syntax.arguments.size(); i++) {
-			if (i != 1) {
-				result += syntax.precedence.at(syntax.level, syntax.operators[0]).infix;
-			}
-			result += import_constant(syntax.arguments[i], tokens);
-		}
-		result += syntax.precedence.at(syntax.level, syntax.operators[0]).postfix;
-	} else if (syntax.precedence.isModifier(syntax.level)
-		and syntax.precedence.at(syntax.level, syntax.operators[0]).trigger == ".") {
-		for (int i = 0; i < (int)syntax.arguments.size(); i++) {
-			if (i != 0) {
-				result += syntax.precedence.at(syntax.level, syntax.operators[0]).trigger;
-			}
-			result += import_net_name(syntax.arguments[i], tokens);
-		}
-	} else {
-		if (tokens != nullptr) {
-			tokens->load(&syntax);
-			tokens->internal("sub expressions in variable names not supported", __FILE__, __LINE__);
-		} else {
-			internal("", "sub expressions in variabe names not supported", __FILE__, __LINE__);
-		}
-		return "_";
-	}
-
-	return result;
-}
-
-template <int group, typename number_t, typename instance_t>
-int import_net(const parse_expression::expression_t<group, number_t, instance_t> &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define) {
-	string name = import_net_name(syntax, tokens);
-	if (default_id != 0) {
-		name += "'" + ::to_string(default_id);
-	}
-
-	return import_net(name, nets, tokens, auto_define);
-}
-
-template <int group, typename number_t, typename instance_t>
+/*template <int group, typename number_t, typename instance_t>
 boolean::cube import_cube(const parse_expression::assignment_t<group, number_t, instance_t> &syntax, ucs::Netlist nets, int default_id, tokenizer *tokens, bool auto_define) {
 	if (syntax.operation == "+"
 		or syntax.operation == "-"
@@ -623,7 +484,7 @@ boolean::unsigned_int import_unsigned_int(const parse_expression::expression_t<g
 	}
 
 	return result;
-}
+}*/
 
 
 }
