@@ -36,7 +36,8 @@ struct ExpressionImporter : parse_expression::LValuedImporter<boolean::cover, st
 	boolean::cover import_modifier(parse_expression::operation op, vector<boolean::cover> args, tokenizer *tokens) const override;
 };
 
-boolean::cover import_expression(const parse_expression::expression &syntax, ucs::Netlist nets, tokenizer *tokens, int region = 0, bool auto_define = false);
+boolean::cover import_cover(const parse_expression::expression &syntax, ucs::Netlist nets, tokenizer *tokens, int region = 0, bool auto_define = false);
+boolean::cube import_cube(const parse_expression::expression &syntax, ucs::Netlist nets, tokenizer *tokens, int region = 0, bool auto_define = false);
 
 struct CompositionImporter : parse_expression::Importer<boolean::cover> {
 	ucs::Netlist symbols;
@@ -55,6 +56,7 @@ struct CompositionImporter : parse_expression::Importer<boolean::cover> {
 };
 
 boolean::cube import_assignment(const assignment &syntax, ucs::Netlist nets, tokenizer *tokens, int region = 0, bool auto_define = false);
-boolean::cover import_composition(const parse_expression::expression &syntax, ucs::Netlist nets, tokenizer *tokens, int region = 0, bool auto_define = false);
+boolean::cover import_choice(const parse_expression::expression &syntax, ucs::Netlist nets, tokenizer *tokens, int region = 0, bool auto_define = false);
+boolean::cube import_parallel(const parse_expression::expression &syntax, ucs::Netlist nets, tokenizer *tokens, int region = 0, bool auto_define = false);
 
 }

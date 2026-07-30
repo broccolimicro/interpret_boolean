@@ -37,9 +37,6 @@ parse_expression::config makeExprConfig() {
 
 	using operation_set=parse_expression::operation_set;
 
-	cfg.order.push(operation_set::TERNARY);
-	cfg.order.push_back("", "?", ":", "");
-
 	cfg.order.push(operation_set::BINARY);
 	cfg.order.push_back("", "", "|", "");
 
@@ -84,6 +81,7 @@ parse_expression::config makeExprConfig() {
 	cfg.order.push_back("~", "", "", "");
 	cfg.order.push_back("+", "", "", "");
 	cfg.order.push_back("-", "", "", "");
+	cfg.order.push_back("?", "", "", "");
 
 	cfg.set_lvalue();
 

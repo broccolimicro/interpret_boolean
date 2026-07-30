@@ -29,8 +29,8 @@ TEST(Composition, CubeBasic) {
 	
 	// Import
 	test::composition input_comp(tokens);
-	boolean::cover dut = test::import_composition(input_comp, nets, &tokens, 0, true);
-	
+	boolean::cube dut = test::import_parallel(input_comp, nets, &tokens, 0, true);
+
 	// Export
 	test::composition output_expr = test::export_composition(dut, nets);
 	
@@ -52,7 +52,7 @@ TEST(Composition, CubeDisjunction) {
 	
 	// Import
 	test::composition input_comp(tokens);
-	boolean::cover dut = test::import_composition(input_comp, nets, &tokens, 0, true);
+	boolean::cube dut = test::import_parallel(input_comp, nets, &tokens, 0, true);
 	
 	// Export
 	test::composition output_expr = test::export_composition(dut, nets);
@@ -76,7 +76,7 @@ TEST(Composition, CoverBasic) {
 	
 	// Import
 	test::composition input_expr(tokens);
-	boolean::cover dut = test::import_composition(input_expr, nets, &tokens, 0, true);
+	boolean::cover dut = test::import_choice(input_expr, nets, &tokens, 0, true);
 	
 	// Export
 	test::composition output_expr = test::export_composition(dut, nets);
@@ -99,7 +99,7 @@ TEST(Composition, CoverSingleVariable) {
 	
 	// Import
 	test::composition input_expr(tokens);
-	boolean::cover dut = test::import_composition(input_expr, nets, &tokens, 0, true);
+	boolean::cover dut = test::import_choice(input_expr, nets, &tokens, 0, true);
 	
 	// Export
 	test::composition output_expr = test::export_composition(dut, nets);
@@ -122,7 +122,7 @@ TEST(Composition, CoverSingleInterference) {
 	
 	// Import
 	test::composition input_expr(tokens);
-	boolean::cover dut = test::import_composition(input_expr, nets, &tokens, 0, true);
+	boolean::cover dut = test::import_choice(input_expr, nets, &tokens, 0, true);
 
 	// Export
 	test::composition output_expr = test::export_composition(dut, nets);
@@ -145,7 +145,7 @@ TEST(Composition, CoverBasicInterference) {
 	
 	// Import
 	test::composition input_expr(tokens);
-	boolean::cover dut = test::import_composition(input_expr, nets, &tokens, 0, true);
+	boolean::cover dut = test::import_choice(input_expr, nets, &tokens, 0, true);
 	
 	// Export
 	test::composition output_expr = test::export_composition(dut, nets);
@@ -168,13 +168,13 @@ TEST(Composition, CoverCompoundInterference) {
 	
 	// Import
 	test::composition input_expr(tokens);
-	boolean::cover dut = test::import_composition(input_expr, nets, &tokens, 0, true);
+	boolean::cover dut = test::import_choice(input_expr, nets, &tokens, 0, true);
 	
 	// Export
 	test::composition output_expr = test::export_composition(dut, nets);
 	
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(output_expr.valid);
-	EXPECT_EQ(output_expr.to_string(), "x+,a+,b+,c~,d-,e+:x+,a+,b-,c-:x+,d-,e-");
+	EXPECT_EQ(output_expr.to_string(), "a+,b+,c~,d-,e+,x+:a+,b-,c-,x+:d-,e-,x+");
 }
 

@@ -70,13 +70,13 @@ parse_expression::operation CompositionExporter::export_operator(int func) const
 }
 
 const parse_expression::precedence_set &CompositionExporter::precedence() const {
-	return test::expression_config::cfg->order;
+	return test::composition_config::cfg->order;
 }
 
 parse_expression::expression::argument CompositionExporter::export_constant(int value) const {
-	constant result;
-	result.value = boolean::export_value(value);
-	return {0, std::shared_ptr<parse::syntax>(result.clone())};
+	assignment result;
+	result.valid = true;
+	return {1, std::shared_ptr<parse::syntax>(result.clone())};
 }
 
 parse_expression::expression::argument CompositionExporter::export_literal(size_t index) const {

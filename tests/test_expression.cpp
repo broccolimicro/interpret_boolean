@@ -30,7 +30,7 @@ TEST(Expression, CubeBasic) {
 	
 	// Import
 	test::expression input_expr(tokens);
-	boolean::cover dut = test::import_expression(input_expr, nets, &tokens, 0, true);
+	boolean::cube dut = test::import_cube(input_expr, nets, &tokens, 0, true);
 	
 	// Export
 	parse_expression::expression output_expr = test::export_expression(dut, nets);
@@ -55,14 +55,14 @@ TEST(Expression, CubeMultiple) {
 	
 	// Import
 	test::expression input_comp(tokens);
-	boolean::cover dut = test::import_expression(input_comp, nets, &tokens, 0, true);
+	boolean::cube dut = test::import_cube(input_comp, nets, &tokens, 0, true);
 	
 	// Export
 	parse_expression::expression output_expr = test::export_expression(dut, nets);
 	
 	EXPECT_FALSE(tokens.is_clean());
 	EXPECT_TRUE(output_expr.valid);
-	EXPECT_EQ(output_expr.to_string(), "1");
+	EXPECT_EQ(output_expr.to_string(), "vdd");
 }
 
 TEST(Expression, CoverBasic) {
@@ -80,7 +80,7 @@ TEST(Expression, CoverBasic) {
 	
 	// Import
 	test::expression input_expr(tokens);
-	boolean::cover dut = test::import_expression(input_expr, nets, &tokens, 0, true);
+	boolean::cover dut = test::import_cover(input_expr, nets, &tokens, 0, true);
 	
 	// Export
 	parse_expression::expression output_expr = test::export_expression(dut, nets);
@@ -105,7 +105,7 @@ TEST(Expression, CoverSingleVariable) {
 	
 	// Import
 	test::expression input_expr(tokens);
-	boolean::cover dut = test::import_expression(input_expr, nets, &tokens, 0, true);
+	boolean::cover dut = test::import_cover(input_expr, nets, &tokens, 0, true);
 	
 	// Export
 	parse_expression::expression output_expr = test::export_expression(dut, nets);
@@ -130,7 +130,7 @@ TEST(Expression, CoverSingleInterference) {
 	
 	// Import
 	test::expression input_expr(tokens);
-	boolean::cover dut = test::import_expression(input_expr, nets, &tokens, 0, true);
+	boolean::cover dut = test::import_cover(input_expr, nets, &tokens, 0, true);
 
 	// Export
 	parse_expression::expression output_expr = test::export_expression(dut, nets);
@@ -138,9 +138,7 @@ TEST(Expression, CoverSingleInterference) {
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(output_expr.valid);
 
-	// TODO(edward.bingham) We may want to be able to actively drive interference
-	// as an error case? In which case, this should return "a~" 
-	EXPECT_EQ(output_expr.to_string(), "0");
+	EXPECT_EQ(output_expr.to_string(), "gnd");
 }
 
 TEST(Expression, CoverBasicInterference) {
@@ -158,7 +156,7 @@ TEST(Expression, CoverBasicInterference) {
 	
 	// Import
 	test::expression input_expr(tokens);
-	boolean::cover dut = test::import_expression(input_expr, nets, &tokens, 0, true);
+	boolean::cover dut = test::import_cover(input_expr, nets, &tokens, 0, true);
 	
 	// Export
 	parse_expression::expression output_expr = test::export_expression(dut, nets);
@@ -183,7 +181,7 @@ TEST(Expression, CoverCompoundInterference) {
 	
 	// Import
 	test::expression input_expr(tokens);
-	boolean::cover dut = test::import_expression(input_expr, nets, &tokens, 0, true);
+	boolean::cover dut = test::import_cover(input_expr, nets, &tokens, 0, true);
 	
 	// Export
 	parse_expression::expression output_expr = test::export_expression(dut, nets);

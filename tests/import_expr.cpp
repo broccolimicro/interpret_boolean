@@ -106,6 +106,9 @@ std::string ExpressionImporter::import_modifier(parse_expression::operation op, 
 boolean::cover ExpressionImporter::import_unary(parse_expression::operation op, boolean::cover expr, tokenizer *tokens) const {
 	if (op.is("~", "", "", "")) {
 		return ~expr;
+	} else if (op.is("?", "", "", "")) {
+		//return expr.nulled();
+		return boolean::cover();
 	}
 	internal("", "unrecognized operation", __FILE__, __LINE__);
 	return expr;
@@ -132,13 +135,24 @@ boolean::cover ExpressionImporter::import_modifier(parse_expression::operation o
 	return boolean::cover();
 }
 
-boolean::cover import_expression(const parse_expression::expression &syntax, ucs::Netlist nets, tokenizer *tokens, int region, bool auto_define) {
+boolean::cover import_cover(const parse_expression::expression &syntax, ucs::Netlist nets, tokenizer *tokens, int region, bool auto_define) {
 	return ExpressionImporter(nets, region, auto_define).import_expression(syntax, tokens);
 }
 
-
-
-
+boolean::cube import_cube(const parse_expression::expression &syntax, ucs::Netlist nets, tokenizer *tokens, int region, bool auto_define) {
+	boolean::cover result = ExpressionImporter(nets, region, auto_define).import_expression(syntax, tokens);
+	if (result.cubes.size() > 1) {
+		if (tokens != nullptr) {
+			tokens->error("expected cube, found cover", __FILE__, __LINE__);
+		} else {
+			error("", "expected cube, found cover", __FILE__, __LINE__);
+		}
+		return boolean::cube();
+	} else if (result.cubes.empty()) {
+		return boolean::cube(0);
+	}
+	return result.cubes[0];
+}
 
 CompositionImporter::CompositionImporter(ucs::Netlist symbols, int region, bool autoDefine) : symbols(symbols) {
 	this->region.push_back(region);
@@ -166,6 +180,8 @@ boolean::cube CompositionImporter::import_assignment(const assignment &syntax, t
 		return boolean::cube(uid, 1);
 	} else if (syntax.operation == "-") {
 		return boolean::cube(uid, 0);
+	} else if (syntax.operation == "~") {
+		return boolean::cube(uid, -1);
 	} else if (syntax.operation == "=") {
 		std::string rval = in.import_lvalue(syntax.right, tokens);
 		if (rval == "vdd") {
@@ -216,9 +232,9 @@ boolean::cover CompositionImporter::import_modifier(parse_expression::operation 
 
 boolean::cover CompositionImporter::import_binary(parse_expression::operation op, boolean::cover left, boolean::cover right, tokenizer *tokens) const {
 	if (op.is("", "", ":", "")) {
-		return left | right;
+		return boolean::choice(left, right);
 	} else if (op.is("", "", ",", "")) {
-		return left & right;
+		return boolean::parallel(left, right);
 	}
 	internal("", "unrecognized operation", __FILE__, __LINE__);
 	return left;
@@ -228,8 +244,23 @@ boolean::cube import_assignment(const assignment &syntax, ucs::Netlist nets, tok
 	return CompositionImporter(nets, region, auto_define).import_assignment(syntax, tokens);
 }
 
-boolean::cover import_composition(const parse_expression::expression &syntax, ucs::Netlist nets, tokenizer *tokens, int region, bool auto_define) {
+boolean::cover import_choice(const parse_expression::expression &syntax, ucs::Netlist nets, tokenizer *tokens, int region, bool auto_define) {
 	return CompositionImporter(nets, region, auto_define).import_expression(syntax, tokens);
+}
+
+boolean::cube import_parallel(const parse_expression::expression &syntax, ucs::Netlist nets, tokenizer *tokens, int region, bool auto_define) {
+	boolean::cover result = CompositionImporter(nets, region, auto_define).import_expression(syntax, tokens);
+	if (result.cubes.size() > 1) {
+		if (tokens != nullptr) {
+			tokens->error("expected cube, found cover", __FILE__, __LINE__);
+		} else {
+			error("", "expected cube, found cover", __FILE__, __LINE__);
+		}
+		return boolean::cube();
+	} else if (result.cubes.empty()) {
+		return boolean::cube(0);
+	}
+	return result.cubes[0];
 }
 
 }
