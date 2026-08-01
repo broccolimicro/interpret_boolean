@@ -441,7 +441,7 @@ boolean::unsigned_int import_unsigned_int(const parse_expression::expression_t<g
 					result ^= sub;
 				} else if (syntax.precedence.at(syntax.level, i-1).infix == "==") {
 					result = boolean::unsigned_int(boolean::bitset(result == sub));
-				} else if (syntax.precedence.at(syntax.level, i-1).infix == "~=") {
+				} else if (syntax.precedence.at(syntax.level, i-1).infix == "!=") {
 					result = boolean::unsigned_int(boolean::bitset(result != sub));
 				} else if (syntax.precedence.at(syntax.level, i-1).infix == "<") {
 					result = boolean::unsigned_int(boolean::bitset(result < sub));
