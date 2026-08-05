@@ -171,6 +171,9 @@ boolean::cube CompositionImporter::import_assignment(const assignment &syntax, t
 	}
 
 	std::string lval = in.import_lvalue(syntax.left[0], tokens);
+	if (region.back() != 0) {
+		lval += "'" + std::to_string(region.back());
+	}
 	int uid = boolean::import_net(lval, symbols, tokens, autoDefine);
 	if (uid < 0) {
 		return boolean::cube();
